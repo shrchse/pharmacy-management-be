@@ -3,17 +3,25 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import routes from './routes';
+import { env } from './config/env';
 import { notFoundMiddleware } from './middlewares/notFound.middleware';
 import { errorMiddleware } from './middlewares/error.middleware';
+import { rateLimitMiddleware } from './middlewares/rateLimit.middleware';
 
 const app: Application = express();
 
 // Security & Utility Middlewares
+app.set('trust proxy', env.TRUST_PROXY);
 app.use(helmet());
-app.use(cors());
-app.use(morgan('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(cors({
+  origin: env.CORS_ORIGIN.includes('*') ? true : env.CORS_ORIGIN,
+}));
+app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev', {
+  skip: () => env.NODE_ENV === 'test',
+}));
+app.use(rateLimitMiddleware);
+app.use(express.json({ limit: env.JSON_BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: env.JSON_BODY_LIMIT }));
 
 // Root Welcome Endpoint
 app.get('/', (_req: Request, res: Response) => {

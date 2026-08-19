@@ -10,7 +10,9 @@ export const errorMiddleware = (
   res: Response,
   _next: NextFunction
 ) => {
-  console.error('🔥 Error caught in global middleware:', err);
+  if (env.NODE_ENV !== 'test') {
+    console.error('Error caught in global middleware:', err);
+  }
 
   if (err instanceof ZodError) {
     return sendError(

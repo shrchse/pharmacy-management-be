@@ -15,7 +15,7 @@ export const openApiDocument = {
   info: {
     title: 'SIM Apotek Backend API',
     version: '1.0.0',
-    description: 'Phase 0 and Phase 1 API contract for SIM Apotek backend.',
+    description: 'MVP1 API contract for SIM Apotek backend.',
   },
   servers: [{ url: '/api/v1' }],
   components: {
@@ -118,6 +118,23 @@ export const openApiDocument = {
     '/licenses/alerts': { get: { responses: { 200: successResponse() } } },
     '/practitioner-licenses': { get: { responses: { 200: successResponse() } }, post: { responses: { 201: successResponse() } } },
     '/practitioner-licenses/{id}': { patch: { responses: { 200: successResponse() } } },
+    '/prescriptions': { get: { responses: { 200: successResponse() } }, post: { responses: { 201: successResponse() } } },
+    '/prescriptions/history': { get: { responses: { 200: successResponse() } } },
+    '/prescriptions/{id}': { get: { responses: { 200: successResponse() } }, patch: { responses: { 200: successResponse() } } },
+    '/prescriptions/{id}/verify': { post: { responses: { 200: successResponse() } } },
+    '/prescriptions/{id}/dispense': { post: { responses: { 200: successResponse() } } },
+    '/crm/members': { get: { responses: { 200: successResponse() } }, post: { responses: { 201: successResponse() } } },
+    '/crm/campaigns': { get: { responses: { 200: successResponse() } }, post: { responses: { 201: successResponse() } } },
+    '/owner/dashboard': { get: { responses: { 200: successResponse() } } },
+    '/owner/daily-brief': { get: { responses: { 200: successResponse() } } },
+    '/owner/health-score': { get: { responses: { 200: successResponse() } } },
+    '/owner/warnings': { get: { responses: { 200: successResponse() } } },
+    '/owner/recommendations': { get: { responses: { 200: successResponse() } } },
+    '/owner/audit-control': { get: { responses: { 200: successResponse() } } },
+    '/analysis/inventory': { get: { responses: { 200: successResponse() } } },
+    '/analysis/pareto': { get: { responses: { 200: successResponse() } } },
+    '/analysis/product-margin': { get: { responses: { 200: successResponse() } } },
+    '/analysis/supplier-purchases': { get: { responses: { 200: successResponse() } } },
   },
 };
 

@@ -7,8 +7,17 @@
     "dev": "tsx watch src/index.ts",
     "build": "rimraf dist && tsc",
     "start": "node dist/index.js",
+    "test:openapi": "node scripts/verify-openapi.cjs",
+    "test:smoke": "node scripts/smoke-http.cjs",
+    "test:db": "node scripts/db-readiness.cjs",
+    "test:rls": "node scripts/rls-context.cjs",
+    "test:e2e": "node --no-deprecation scripts/e2e-mvp1.cjs",
+    "verify": "npm run build && npm run test:openapi && npm run test:smoke",
+    "verify:db": "npm run build && npm run test:db && npm run test:rls",
+    "verify:staging": "npm run verify && npm run test:db && npm run test:rls && npm run test:e2e",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
+    "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio"
   },
   "keywords": [

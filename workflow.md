@@ -253,6 +253,37 @@ Gate Phase 4:
 - Prescription dasar bisa diverifikasi dan masuk ke sale.
 - CRM member dan tier berjalan minimal.
 
+Status implementasi 2026-08-18:
+
+- Step 1 `pharmacy` selesai untuk MVP1 minimal:
+  - `GET /prescriptions`
+  - `POST /prescriptions`
+  - `GET /prescriptions/:id`
+  - `PATCH /prescriptions/:id`
+  - `GET /prescriptions/history`
+  - `POST /prescriptions/:id/verify`
+  - `POST /prescriptions/:id/dispense`
+  - Dispensing memakai pola sederhana: resep diverifikasi lalu dikaitkan ke sale POS bertipe `PRESCRIPTION` atau `COMPOUND`, tanpa model `Dispensing` baru.
+- Step 2 `crm` selesai untuk MVP1 minimal:
+  - `GET /crm/members`
+  - `POST /crm/members`
+  - `GET /crm/campaigns`
+  - `POST /crm/campaigns`
+  - Member memakai model `Customer`; tier dihitung live dari histori transaksi dan dapat membaca policy `crm.tiers` bila tersedia.
+  - Campaign sementara disimpan di `AnalyticsSnapshot` scope `CRM_CAMPAIGN` agar belum perlu migration baru.
+- Step 3 `owner` selesai untuk dashboard dan analysis awal:
+  - `GET /owner/dashboard`
+  - `GET /owner/daily-brief`
+  - `GET /owner/health-score`
+  - `GET /owner/warnings`
+  - `GET /owner/recommendations`
+  - `GET /owner/audit-control`
+  - `GET /analysis/inventory`
+  - `GET /analysis/pareto`
+  - `GET /analysis/product-margin`
+  - `GET /analysis/supplier-purchases`
+  - Semua endpoint owner membaca agregasi live dari sale, sale item, batch, cash, debt, receivable, purchase, dan audit log.
+
 ## Gate MVP1 Final
 
 MVP1 dianggap siap pilot jika:
@@ -269,6 +300,40 @@ MVP1 dianggap siap pilot jika:
 - RLS aktif untuk tabel tenant-scoped utama.
 - Seed demo tersedia.
 - OpenAPI docs tersedia dan cocok dengan endpoint runtime.
+
+Status hardening 2026-08-18:
+
+- `npm run verify` tersedia sebagai quality gate lokal:
+  - build TypeScript
+  - smoke OpenAPI untuk path MVP1 utama
+  - smoke HTTP untuk health, docs, auth guard, protected route, dan 404 envelope
+- CI GitHub Actions tersedia di `.github/workflows/ci.yml` dan menjalankan `npm run verify`.
+- Runtime production hardening awal tersedia:
+  - validasi env menolak `JWT_SECRET` contoh saat `NODE_ENV=production`
+  - CORS origin dikontrol lewat `CORS_ORIGIN`
+  - limit body dikontrol lewat `JSON_BODY_LIMIT`
+  - trust proxy dikontrol lewat `TRUST_PROXY`
+  - rate limit in-memory dikontrol lewat `RATE_LIMIT_WINDOW_MS` dan `RATE_LIMIT_MAX`
+  - request logging senyap saat test dan memakai format combined saat production
+
+Gate staging yang sudah tersedia/lulus pada DB aktif 2026-08-18:
+
+- `npm run verify:db` lulus: tabel MVP1 utama ada, migration tidak pending/failed, dan RLS tenant isolation aktif pada tabel tenant-scoped utama.
+- `npm run test:rls` lulus: Prisma runtime context mengatur `app.tenant_id` dan `app.branch_id` di transaction request.
+- `npm run test:e2e` lulus: login -> auth me -> CRM member -> product -> stock batch -> shift open -> checkout idempotent -> receipt -> checkout paralel stok terbatas -> prescription verify/dispense -> PO APJ approval/receive -> debt -> finance P&L -> owner dashboard -> close/verify shift.
+
+Belum boleh diberi label production-ready penuh sebelum gate berikut lulus:
+
+- Migration Prisma dari database kosong dan dari database existing diverifikasi di pipeline staging bersih, bukan hanya DB lokal aktif.
+- RLS tenant isolation diverifikasi dengan data dua tenant yang memakai database role non-owner/non-superuser.
+- Audit coverage test untuk semua write sensitif.
+- OpenAPI schema detail request/response dilengkapi, bukan hanya path skeleton.
+
+Perintah gate:
+
+- Lokal tanpa DB: `npm run verify`
+- Staging/production candidate dengan DB: `npm run verify:db`
+- Staging E2E dengan data test: `npm run verify:staging`
 
 ## Urutan Implementasi MVP2
 

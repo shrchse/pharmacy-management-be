@@ -3,6 +3,7 @@
 A modular, production-ready Express backend written in TypeScript with Prisma ORM.
 
 ## Tech Stack
+
 - **Runtime**: Node.js
 - **Framework**: Express.js
 - **Language**: TypeScript
@@ -15,33 +16,43 @@ A modular, production-ready Express backend written in TypeScript with Prisma OR
 ## Getting Started
 
 ### 1. Installation
+
 Install project dependencies:
+
 ```bash
 npm install
 ```
 
 ### 2. Environment Setup
+
 Copy the environment template file:
+
 ```bash
 cp .env.example .env
 ```
+
 Update `DATABASE_URL` in `.env` with your PostgreSQL database credentials.
 
 ### 3. Prisma Migration & Client Generation
+
 Generate Prisma Client:
+
 ```bash
 npm run prisma:generate
 ```
 
 Run Database Migrations:
+
 ```bash
 npm run prisma:migrate
 ```
 
 ### 4. Running the Development Server
+
 ```bash
 npm run dev
 ```
+
 The server will start at `http://localhost:5000`.
 
 ---
@@ -72,3 +83,5 @@ pharmacy-management-be/
 ├── package.json
 └── tsconfig.json
 ```
+
+codex resume 01a012ad-d2e9-7a10-97b8-d272cbd0874f

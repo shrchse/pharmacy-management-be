@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 import { z } from 'zod';
 import { env } from '../config/env';
-import { prisma } from '../lib/prisma';
+import { prisma, runWithPrismaContext } from '../lib/prisma';
 import { sendError } from '../utils/apiResponse';
 
 const jwtPayloadSchema = z.object({
@@ -49,7 +49,10 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
       return sendError(res, 'Authentication required', 401);
     }
 
-    return next();
+    return runWithPrismaContext({
+      tenantId: req.auth.tenantId,
+      branchId: req.auth.branchId,
+    }, next);
   });
 };
 
