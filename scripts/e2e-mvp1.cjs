@@ -91,6 +91,39 @@ const getBestAuthContext = async (client) => {
   };
 };
 
+const getSuperadminAuthContext = async (client) => {
+  const users = await client.query(
+    `SELECT u.id, u."tenantId", u."branchId", u."roleId"
+     FROM "User" u
+     JOIN "Role" r ON r.id = u."roleId"
+     JOIN "RolePermission" rp ON rp."roleId" = r.id
+     JOIN "Permission" p ON p.id = rp."permissionId"
+     WHERE u.status = 'ACTIVE'
+       AND lower(replace(replace(r.name, '_', ''), '-', '')) = 'superadmin'
+       AND p.code = 'internal.tenant.manage'
+     LIMIT 1`
+  );
+  if (users.rowCount === 0) return null;
+
+  const user = users.rows[0];
+  const branchId = user.branchId || (await client.query('SELECT id FROM "Branch" WHERE "tenantId" = $1 LIMIT 1', [user.tenantId])).rows[0]?.id;
+  const permissions = await client.query(
+    `SELECT p.code
+     FROM "RolePermission" rp
+     JOIN "Permission" p ON p.id = rp."permissionId"
+     WHERE rp."roleId" = $1`,
+    [user.roleId]
+  );
+
+  return {
+    userId: user.id,
+    tenantId: user.tenantId,
+    branchId,
+    roleId: user.roleId,
+    permissions: permissions.rows.map((row) => row.code),
+  };
+};
+
 const signToken = (context) => {
   return jwt.sign({
     sub: context.userId,
@@ -162,6 +195,61 @@ const run = async () => {
     const boot = await ensureBootstrapOrContext(baseUrl, client, stamp);
     for (const feature of ['inventory', 'purchasing', 'finance', 'crm', 'resep']) {
       await ensureFeature(client, boot.tenantId, feature);
+    }
+
+    const superadminContext = await getSuperadminAuthContext(client);
+    if (superadminContext) {
+      const superadminToken = signToken(superadminContext);
+      const plans = await jsonRequest(baseUrl, 'GET', '/api/v1/internal/plans', undefined, superadminToken, superadminContext.branchId);
+      assert.ok(plans.length > 0, 'No active plan available for tenant onboarding');
+      const onboardingEmail = `owner-onboard-${stamp.toLowerCase()}@example.test`;
+      const onboarded = await jsonRequest(baseUrl, 'POST', '/api/v1/internal/tenants', {
+        name: `Onboarded Tenant ${stamp}`,
+        slug: `onboarded-${stamp.toLowerCase()}`,
+        email: `onboarded-${stamp.toLowerCase()}@example.test`,
+        planId: plans[0].id,
+        branch: {
+          code: 'MAIN',
+          name: 'Cabang Utama',
+        },
+        owner: {
+          name: `Onboarded Owner ${stamp}`,
+          email: onboardingEmail,
+          password: 'Password123!',
+        },
+      }, superadminToken, superadminContext.branchId);
+      assert.ok(onboarded.id);
+      assert.ok(onboarded.branch.id);
+      assert.equal(onboarded.owner.email, onboardingEmail);
+
+      const onboardedLogin = await jsonRequest(baseUrl, 'POST', '/api/v1/auth/login', {
+        email: onboardingEmail,
+        password: 'Password123!',
+      });
+      assert.equal(onboardedLogin.user.email, onboardingEmail);
+      assert.equal(onboardedLogin.tenant.id, onboarded.id);
+      assert.equal(onboardedLogin.branch.id, onboarded.branch.id);
+
+      const resetPassword = 'Password456!';
+      const resetUser = await jsonRequest(baseUrl, 'PATCH', `/api/v1/internal/tenants/${onboarded.id}/users/${onboarded.owner.id}/password`, {
+        newPassword: resetPassword,
+        reason: `E2E reset ${stamp}`,
+      }, superadminToken, superadminContext.branchId);
+      assert.equal(resetUser.id, onboarded.owner.id);
+
+      const oldLogin = await rawJsonRequest(baseUrl, 'POST', '/api/v1/auth/login', {
+        email: onboardingEmail,
+        password: 'Password123!',
+      });
+      assert.equal(oldLogin.status, 401);
+
+      const resetLogin = await jsonRequest(baseUrl, 'POST', '/api/v1/auth/login', {
+        email: onboardingEmail,
+        password: resetPassword,
+      });
+      assert.equal(resetLogin.user.email, onboardingEmail);
+      assert.equal(resetLogin.tenant.id, onboarded.id);
+      assert.equal(resetLogin.branch.id, onboarded.branch.id);
     }
 
     const e2eUser = await jsonRequest(baseUrl, 'POST', '/api/v1/users', {
@@ -298,6 +386,13 @@ const run = async () => {
       saleId: sale.id,
     }, token, branchId);
     assert.equal(dispensed.status, 'REDEEMED');
+
+    const salesReturn = await jsonRequest(baseUrl, 'POST', '/api/v1/sales-returns', {
+      saleId: sale.id,
+      reason: `E2E return ${stamp}`,
+      items: [{ saleItemId: sale.saleItems[0].id, qty: 1 }],
+    }, token, branchId);
+    assert.equal(salesReturn.sale.id, sale.id);
 
     const supplier = await jsonRequest(baseUrl, 'POST', '/api/v1/suppliers', {
       code: `S${stamp}`,

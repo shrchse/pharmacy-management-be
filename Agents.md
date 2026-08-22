@@ -8,6 +8,7 @@ Baca dulu:
 
 - `README.md`
 - `PRD.md`
+- `PRD_Teknis_SIM_Apotek_Gabungan.md`
 - `src/services/index.ts`
 - `src/services/db.ts`
 - `src/services/repository/*`

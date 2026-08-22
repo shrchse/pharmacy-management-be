@@ -140,29 +140,16 @@ export const starterIndex = (_req: Request, res: Response) => {
   return sendSuccess(
     res,
     {
-      tenants: {
-        list: 'GET /api/v1/tenants',
-        create: 'POST /api/v1/tenants',
-      },
-      branches: {
-        list: 'GET /api/v1/branches',
-        listByTenant: 'GET /api/v1/tenants/:tenantId/branches',
-        create: 'POST /api/v1/tenants/:tenantId/branches',
-      },
-      products: {
-        list: 'GET /api/v1/products',
-        listByTenant: 'GET /api/v1/tenants/:tenantId/products',
-        create: 'POST /api/v1/products',
-      },
-      stock: {
-        overview: 'GET /api/v1/branches/:branchId/stock/overview',
-        createBatch: 'POST /api/v1/branches/:branchId/stock/batches',
-      },
-      pos: {
-        checkout: 'POST /api/v1/branches/:branchId/pos/checkout',
+      deprecated: true,
+      message: 'Use the authenticated /api/v1 module routes instead of starter routes.',
+      canonical: {
+        tenantCreate: 'POST /api/v1/internal/tenants',
+        productList: 'GET /api/v1/products',
+        stockOverview: 'GET /api/v1/stock/overview',
+        checkout: 'POST /api/v1/pos/checkout',
       },
     },
-    'Starter endpoints'
+    'Starter endpoints are deprecated'
   );
 };
 

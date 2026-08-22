@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { auditLog } from '../../lib/audit';
 import { prisma } from '../../lib/prisma';
-import { sendSuccess } from '../../utils/apiResponse';
+import { HttpError, sendError, sendSuccess } from '../../utils/apiResponse';
 import { getBranchId, getTenantId } from '../../utils/scope';
 
 const branchSchema = z.object({
@@ -16,6 +16,7 @@ const branchSchema = z.object({
   apjName: z.string().optional(),
   apjSipaNumber: z.string().optional(),
 });
+const branchUpdateSchema = branchSchema.partial();
 
 const categorySchema = z.object({
   name: z.string().min(1),
@@ -36,6 +37,8 @@ const unitSchema = z.object({
   code: z.string().min(1),
   name: z.string().min(1),
 });
+const categoryUpdateSchema = categorySchema.partial();
+const unitUpdateSchema = unitSchema.partial();
 
 const rackSchema = z.object({
   branchId: z.string().uuid().optional(),
@@ -43,6 +46,7 @@ const rackSchema = z.object({
   name: z.string().min(1),
   type: z.string().optional(),
 });
+const rackUpdateSchema = rackSchema.omit({ branchId: true }).partial();
 
 const supplierSchema = z.object({
   code: z.string().optional(),
@@ -71,6 +75,9 @@ const doctorSchema = z.object({
   phone: z.string().optional(),
   address: z.string().optional(),
 });
+const supplierUpdateSchema = supplierSchema.partial();
+const customerUpdateSchema = customerSchema.partial();
+const doctorUpdateSchema = doctorSchema.partial();
 
 const userSchema = z.object({
   branchId: z.string().uuid().optional(),
@@ -80,6 +87,11 @@ const userSchema = z.object({
   phone: z.string().optional(),
   password: z.string().min(8),
   sipaNumber: z.string().optional(),
+});
+
+const updateUserSchema = userSchema.partial().extend({
+  password: z.string().min(8).optional(),
+  status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).optional(),
 });
 
 const createdMeta = (resource: string) => `${resource} created`;
@@ -114,6 +126,37 @@ export const createBranch = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const updateBranch = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const id = z.string().uuid().parse(req.params.id);
+    const payload = branchUpdateSchema.parse(req.body);
+    const result = await prisma.$transaction(async (tx) => {
+      const before = await tx.branch.findFirstOrThrow({ where: { id, tenantId } });
+      const updated = await tx.branch.update({ where: { id }, data: payload });
+      await auditLog({ tenantId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'Branch', entityId: id, before, after: updated, req }, tx);
+      return updated;
+    });
+    return sendSuccess(res, result, 'Branch updated');
+  } catch (error) { return next(error); }
+};
+
+export const deleteBranch = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const id = z.string().uuid().parse(req.params.id);
+    const result = await prisma.$transaction(async (tx) => {
+      const before = await tx.branch.findFirstOrThrow({ where: { id, tenantId } });
+      const activeUsers = await tx.user.count({ where: { tenantId, branchId: id, status: 'ACTIVE' } });
+      if (activeUsers > 0) throw new HttpError('Branch still has active users', 409, 'BRANCH_IN_USE', { activeUsers });
+      const updated = await tx.branch.update({ where: { id }, data: { status: 'INACTIVE' } });
+      await auditLog({ tenantId, actorId: req.auth?.userId, action: 'DELETE', entity: 'Branch', entityId: id, before, after: updated, req }, tx);
+      return { id, deleted: true, status: updated.status };
+    });
+    return sendSuccess(res, result, 'Branch deactivated');
+  } catch (error) { return next(error); }
+};
+
 export const listCategories = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = getTenantId(req);
@@ -140,6 +183,37 @@ export const createCategory = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const id = z.string().uuid().parse(req.params.id);
+    const payload = categoryUpdateSchema.parse(req.body);
+    const result = await prisma.$transaction(async (tx) => {
+      const before = await tx.category.findFirstOrThrow({ where: { id, tenantId } });
+      const updated = await tx.category.update({ where: { id }, data: payload });
+      await auditLog({ tenantId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'Category', entityId: id, before, after: updated, req }, tx);
+      return updated;
+    });
+    return sendSuccess(res, result, 'Category updated');
+  } catch (error) { return next(error); }
+};
+
+export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const id = z.string().uuid().parse(req.params.id);
+    const result = await prisma.$transaction(async (tx) => {
+      const before = await tx.category.findFirstOrThrow({ where: { id, tenantId } });
+      const productCount = await tx.product.count({ where: { tenantId, categoryId: id } });
+      if (productCount > 0) throw new HttpError('Category is still used by products', 409, 'CATEGORY_IN_USE', { productCount });
+      await tx.category.delete({ where: { id } });
+      await auditLog({ tenantId, actorId: req.auth?.userId, action: 'DELETE', entity: 'Category', entityId: id, before, req }, tx);
+      return { id, deleted: true };
+    });
+    return sendSuccess(res, result, 'Category deleted');
+  } catch (error) { return next(error); }
+};
+
 export const listUnits = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = getTenantId(req);
@@ -164,6 +238,37 @@ export const createUnit = async (req: Request, res: Response, next: NextFunction
   } catch (error) {
     return next(error);
   }
+};
+
+export const updateUnit = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const id = z.string().uuid().parse(req.params.id);
+    const payload = unitUpdateSchema.parse(req.body);
+    const result = await prisma.$transaction(async (tx) => {
+      const before = await tx.unit.findFirstOrThrow({ where: { id, tenantId } });
+      const updated = await tx.unit.update({ where: { id }, data: payload });
+      await auditLog({ tenantId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'Unit', entityId: id, before, after: updated, req }, tx);
+      return updated;
+    });
+    return sendSuccess(res, result, 'Unit updated');
+  } catch (error) { return next(error); }
+};
+
+export const deleteUnit = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const id = z.string().uuid().parse(req.params.id);
+    const result = await prisma.$transaction(async (tx) => {
+      const before = await tx.unit.findFirstOrThrow({ where: { id, tenantId } });
+      const productUnitCount = await tx.productUnit.count({ where: { unitId: id, product: { tenantId } } });
+      if (productUnitCount > 0) throw new HttpError('Unit is still used by products', 409, 'UNIT_IN_USE', { productUnitCount });
+      await tx.unit.delete({ where: { id } });
+      await auditLog({ tenantId, actorId: req.auth?.userId, action: 'DELETE', entity: 'Unit', entityId: id, before, req }, tx);
+      return { id, deleted: true };
+    });
+    return sendSuccess(res, result, 'Unit deleted');
+  } catch (error) { return next(error); }
 };
 
 export const listRacks = async (req: Request, res: Response, next: NextFunction) => {
@@ -206,6 +311,39 @@ export const createRack = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+export const updateRack = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const branchId = getBranchId(req);
+    const id = z.string().uuid().parse(req.params.id);
+    const payload = rackUpdateSchema.parse(req.body);
+    const result = await prisma.$transaction(async (tx) => {
+      const before = await tx.stockLocation.findFirstOrThrow({ where: { id, tenantId, branchId } });
+      const updated = await tx.stockLocation.update({ where: { id }, data: payload });
+      await auditLog({ tenantId, branchId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'StockLocation', entityId: id, before, after: updated, req }, tx);
+      return updated;
+    });
+    return sendSuccess(res, result, 'Rack updated');
+  } catch (error) { return next(error); }
+};
+
+export const deleteRack = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const branchId = getBranchId(req);
+    const id = z.string().uuid().parse(req.params.id);
+    const result = await prisma.$transaction(async (tx) => {
+      const before = await tx.stockLocation.findFirstOrThrow({ where: { id, tenantId, branchId } });
+      const batchCount = await tx.productBatch.count({ where: { tenantId, branchId, locationId: id } });
+      if (batchCount > 0) throw new HttpError('Rack is still used by stock batches', 409, 'RACK_IN_USE', { batchCount });
+      await tx.stockLocation.delete({ where: { id } });
+      await auditLog({ tenantId, branchId, actorId: req.auth?.userId, action: 'DELETE', entity: 'StockLocation', entityId: id, before, req }, tx);
+      return { id, deleted: true };
+    });
+    return sendSuccess(res, result, 'Rack deleted');
+  } catch (error) { return next(error); }
+};
+
 export const listSuppliers = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = getTenantId(req);
@@ -230,6 +368,22 @@ export const createSupplier = async (req: Request, res: Response, next: NextFunc
   } catch (error) {
     return next(error);
   }
+};
+
+export const updateSupplier = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req); const id = z.string().uuid().parse(req.params.id); const payload = supplierUpdateSchema.parse(req.body);
+    const result = await prisma.$transaction(async (tx) => { const before = await tx.supplier.findFirstOrThrow({ where: { id, tenantId } }); const updated = await tx.supplier.update({ where: { id }, data: payload }); await auditLog({ tenantId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'Supplier', entityId: id, before, after: updated, req }, tx); return updated; });
+    return sendSuccess(res, result, 'Supplier updated');
+  } catch (error) { return next(error); }
+};
+
+export const deleteSupplier = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req); const id = z.string().uuid().parse(req.params.id);
+    const result = await prisma.$transaction(async (tx) => { const before = await tx.supplier.findFirstOrThrow({ where: { id, tenantId } }); const [products, purchases, prices] = await Promise.all([tx.product.count({ where: { tenantId, defaultSupplierId: id } }), tx.purchase.count({ where: { tenantId, supplierId: id } }), tx.supplierProductPrice.count({ where: { tenantId, supplierId: id } })]); if (products + purchases + prices > 0) throw new HttpError('Supplier is still referenced by operational data', 409, 'SUPPLIER_IN_USE', { products, purchases, prices }); await tx.supplier.delete({ where: { id } }); await auditLog({ tenantId, actorId: req.auth?.userId, action: 'DELETE', entity: 'Supplier', entityId: id, before, req }, tx); return { id, deleted: true }; });
+    return sendSuccess(res, result, 'Supplier deleted');
+  } catch (error) { return next(error); }
 };
 
 export const listCustomers = async (req: Request, res: Response, next: NextFunction) => {
@@ -258,6 +412,22 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
   }
 };
 
+export const updateCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req); const id = z.string().uuid().parse(req.params.id); const payload = customerUpdateSchema.parse(req.body);
+    const result = await prisma.$transaction(async (tx) => { const before = await tx.customer.findFirstOrThrow({ where: { id, tenantId } }); const updated = await tx.customer.update({ where: { id }, data: payload }); await auditLog({ tenantId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'Customer', entityId: id, before, after: updated, req }, tx); return updated; });
+    return sendSuccess(res, result, 'Customer updated');
+  } catch (error) { return next(error); }
+};
+
+export const deleteCustomer = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req); const id = z.string().uuid().parse(req.params.id);
+    const result = await prisma.$transaction(async (tx) => { const before = await tx.customer.findFirstOrThrow({ where: { id, tenantId } }); const [sales, prescriptions, receivables, records] = await Promise.all([tx.sale.count({ where: { tenantId, customerId: id } }), tx.prescription.count({ where: { tenantId, customerId: id } }), tx.receivable.count({ where: { tenantId, customerId: id } }), tx.medicalRecord.count({ where: { tenantId, customerId: id } })]); if (sales + prescriptions + receivables + records > 0) throw new HttpError('Customer is still referenced by operational data', 409, 'CUSTOMER_IN_USE', { sales, prescriptions, receivables, records }); await tx.customer.delete({ where: { id } }); await auditLog({ tenantId, actorId: req.auth?.userId, action: 'DELETE', entity: 'Customer', entityId: id, before, req }, tx); return { id, deleted: true }; });
+    return sendSuccess(res, result, 'Customer deleted');
+  } catch (error) { return next(error); }
+};
+
 export const listDoctors = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = getTenantId(req);
@@ -282,6 +452,22 @@ export const createDoctor = async (req: Request, res: Response, next: NextFuncti
   } catch (error) {
     return next(error);
   }
+};
+
+export const updateDoctor = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req); const id = z.string().uuid().parse(req.params.id); const payload = doctorUpdateSchema.parse(req.body);
+    const result = await prisma.$transaction(async (tx) => { const before = await tx.doctor.findFirstOrThrow({ where: { id, tenantId } }); const updated = await tx.doctor.update({ where: { id }, data: payload }); await auditLog({ tenantId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'Doctor', entityId: id, before, after: updated, req }, tx); return updated; });
+    return sendSuccess(res, result, 'Doctor updated');
+  } catch (error) { return next(error); }
+};
+
+export const deleteDoctor = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req); const id = z.string().uuid().parse(req.params.id);
+    const result = await prisma.$transaction(async (tx) => { const before = await tx.doctor.findFirstOrThrow({ where: { id, tenantId } }); const prescriptionCount = await tx.prescription.count({ where: { tenantId, doctorId: id } }); if (prescriptionCount > 0) throw new HttpError('Doctor is still referenced by prescriptions', 409, 'DOCTOR_IN_USE', { prescriptionCount }); await tx.doctor.delete({ where: { id } }); await auditLog({ tenantId, actorId: req.auth?.userId, action: 'DELETE', entity: 'Doctor', entityId: id, before, req }, tx); return { id, deleted: true }; });
+    return sendSuccess(res, result, 'Doctor deleted');
+  } catch (error) { return next(error); }
 };
 
 export const listUsers = async (req: Request, res: Response, next: NextFunction) => {
@@ -317,6 +503,10 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
     const tenantId = getTenantId(req);
     const payload = userSchema.parse(req.body);
     const passwordHash = await bcrypt.hash(payload.password, 12);
+    await prisma.role.findFirstOrThrow({ where: { id: payload.roleId, tenantId } });
+    if (payload.branchId) {
+      await prisma.branch.findFirstOrThrow({ where: { id: payload.branchId, tenantId } });
+    }
     const user = await prisma.$transaction(async (tx) => {
       const created = await tx.user.create({
         data: {
@@ -351,4 +541,41 @@ export const createUser = async (req: Request, res: Response, next: NextFunction
   } catch (error) {
     return next(error);
   }
+};
+
+export const updateUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const userId = z.string().uuid().parse(req.params.id);
+    const payload = updateUserSchema.parse(req.body);
+    const before = await prisma.user.findFirstOrThrow({ where: { id: userId, tenantId }, select: { id: true, tenantId: true, branchId: true, roleId: true, name: true, email: true, phone: true, sipaNumber: true, status: true } });
+    if (payload.roleId) await prisma.role.findFirstOrThrow({ where: { id: payload.roleId, tenantId } });
+    if (payload.branchId) await prisma.branch.findFirstOrThrow({ where: { id: payload.branchId, tenantId } });
+    const passwordHash = payload.password ? await bcrypt.hash(payload.password, 12) : undefined;
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.user.update({
+        where: { id: userId },
+        data: { branchId: payload.branchId, roleId: payload.roleId, name: payload.name, phone: payload.phone, sipaNumber: payload.sipaNumber, status: payload.status, passwordHash },
+        select: { id: true, tenantId: true, branchId: true, roleId: true, name: true, email: true, phone: true, sipaNumber: true, status: true, role: true, branch: true },
+      });
+      await auditLog({ tenantId, branchId: result.branchId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'User', entityId: userId, before, after: result, req }, tx);
+      return result;
+    });
+    return sendSuccess(res, updated, 'User updated');
+  } catch (error) { return next(error); }
+};
+
+export const deactivateUser = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const userId = z.string().uuid().parse(req.params.id);
+    if (userId === req.auth?.userId) return sendError(res, 'The current user cannot be deactivated', 400, undefined, 'SELF_DEACTIVATION_DENIED');
+    const before = await prisma.user.findFirstOrThrow({ where: { id: userId, tenantId }, select: { id: true, tenantId: true, branchId: true, roleId: true, name: true, email: true, phone: true, sipaNumber: true, status: true } });
+    const updated = await prisma.$transaction(async (tx) => {
+      const result = await tx.user.update({ where: { id: userId }, data: { status: 'INACTIVE' }, select: { id: true, tenantId: true, branchId: true, roleId: true, name: true, email: true, phone: true, sipaNumber: true, status: true } });
+      await auditLog({ tenantId, branchId: result.branchId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'User', entityId: userId, before, after: result, metadata: { deactivated: true }, req }, tx);
+      return result;
+    });
+    return sendSuccess(res, updated, 'User deactivated');
+  } catch (error) { return next(error); }
 };

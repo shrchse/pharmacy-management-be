@@ -9,34 +9,59 @@ import {
   hashRequestBody,
 } from '../../lib/idempotency';
 import { prisma } from '../../lib/prisma';
+import { assertSupervisorAuthorizations, consumeSupervisorAuthorizations, SupervisorAction } from '../../lib/supervisor';
 import { Prisma } from '../../generated/prisma/client';
 import { HttpError, sendError, sendSuccess } from '../../utils/apiResponse';
 import { getBranchId, getTenantId } from '../../utils/scope';
 
 const money = (value: number) => value.toFixed(2);
 
+const paymentMethodSchema = z.enum(['CASH', 'QRIS', 'DEBIT_CARD', 'CREDIT_CARD', 'TRANSFER', 'E_WALLET', 'CREDIT']);
 const checkoutSchema = z.object({
   cashierId: z.string().uuid().optional(),
   customerId: z.string().uuid().optional(),
+  doctorId: z.string().uuid().optional(),
   sessionId: z.string().uuid().optional(),
-  saleType: z.enum(['REGULAR', 'PRESCRIPTION', 'COMPOUND']).default('REGULAR'),
+  saleType: z.enum(['REGULAR', 'PRESCRIPTION', 'COMPOUND']).optional(),
+  trxType: z.enum(['bebas', 'resep', 'racikan', 'REGULAR', 'PRESCRIPTION', 'COMPOUND']).optional(),
   channel: z.enum(['OFFLINE', 'WHATSAPP', 'MARKETPLACE', 'ONLINE_STORE', 'MOBILE_OFFLINE']).default('OFFLINE'),
-  discountAmount: z.coerce.number().nonnegative().default(0),
+  discountAmount: z.coerce.number().nonnegative().optional(),
+  discount: z.coerce.number().nonnegative().optional(),
   taxAmount: z.coerce.number().nonnegative().default(0),
+  method: z.string().optional(),
+  paid: z.coerce.number().nonnegative().optional(),
   notes: z.string().optional(),
   items: z.array(z.object({
     productId: z.string().uuid(),
-    productUnitId: z.string().uuid(),
+    productUnitId: z.string().uuid().optional(),
     batchId: z.string().uuid().optional(),
     qty: z.number().int().positive(),
     unitPrice: z.coerce.number().nonnegative().optional(),
     discountAmount: z.coerce.number().nonnegative().default(0),
-  })).min(1),
+  })).min(1).optional(),
+  lines: z.array(z.object({
+    productId: z.string().uuid(),
+    productUnitId: z.string().uuid().optional(),
+    qty: z.number().int().positive(),
+    price: z.coerce.number().nonnegative().optional(),
+    unitPrice: z.coerce.number().nonnegative().optional(),
+    discount: z.coerce.number().nonnegative().default(0),
+  })).min(1).optional(),
   payments: z.array(z.object({
-    method: z.enum(['CASH', 'QRIS', 'DEBIT_CARD', 'CREDIT_CARD', 'TRANSFER', 'E_WALLET', 'CREDIT']),
+    method: paymentMethodSchema,
     amount: z.coerce.number().nonnegative(),
     referenceNo: z.string().optional(),
   })).default([]),
+  supervisorAuthorizationIds: z.array(z.string().uuid()).default([]),
+}).superRefine((value, context) => {
+  if (!value.items && !value.lines) context.addIssue({ code: z.ZodIssueCode.custom, message: 'items or lines is required', path: ['items'] });
+}).transform((value) => {
+  const methodMap: Record<string, z.infer<typeof paymentMethodSchema>> = { tunai: 'CASH', cash: 'CASH', qris: 'QRIS', transfer: 'TRANSFER', debit: 'DEBIT_CARD', credit: 'CREDIT' };
+  const saleTypeMap: Record<string, 'REGULAR' | 'PRESCRIPTION' | 'COMPOUND'> = { bebas: 'REGULAR', resep: 'PRESCRIPTION', racikan: 'COMPOUND', REGULAR: 'REGULAR', PRESCRIPTION: 'PRESCRIPTION', COMPOUND: 'COMPOUND' };
+  const saleType = value.saleType ?? saleTypeMap[value.trxType ?? 'bebas'] ?? 'REGULAR';
+  const items = value.items ?? value.lines!.map((line) => ({ productId: line.productId, productUnitId: line.productUnitId, batchId: undefined, qty: line.qty, unitPrice: line.unitPrice ?? line.price, discountAmount: line.discount }));
+  const payments = value.payments.length > 0 ? value.payments : value.paid === undefined ? [] : [{ method: methodMap[(value.method ?? 'CASH').toLowerCase()] ?? 'CASH', amount: value.paid, referenceNo: undefined }];
+  return { ...value, saleType, items, payments, discountAmount: value.discountAmount ?? value.discount ?? 0 };
 });
 
 const invoiceNumber = () => {
@@ -79,6 +104,7 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
     const payload = checkoutSchema.parse(req.body);
     const cashierId = payload.cashierId ?? req.auth?.userId;
     if (!cashierId) return sendError(res, 'cashierId is required', 400, undefined, 'CASHIER_REQUIRED');
+    if (cashierId !== req.auth?.userId) return sendError(res, 'cashierId must match the authenticated user', 403, undefined, 'CASHIER_SCOPE_DENIED');
 
     const idempotencyKey = getIdempotencyKey(req);
     if (!idempotencyKey) {
@@ -120,21 +146,31 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
       }
 
       const productUnits = await tx.productUnit.findMany({
-        where: { id: { in: payload.items.map((item) => item.productUnitId) } },
+        where: { id: { in: payload.items.map((item) => item.productUnitId).filter((id): id is string => Boolean(id)) } },
       });
       const unitById = new Map(productUnits.map((unit) => [unit.id, unit]));
       const saleItems = [];
       let totalAmount = 0;
+      let grossAmount = 0;
       let costAmount = 0;
+      const authorizedActions = new Set<SupervisorAction>();
+      const authorize = async (action: SupervisorAction) => {
+        if (!authorizedActions.has(action)) {
+          await assertSupervisorAuthorizations(tx, payload.supervisorAuthorizationIds, { tenantId, branchId, requestedById: cashierId, action });
+          authorizedActions.add(action);
+        }
+      };
 
       for (const item of payload.items) {
-        const productUnit = unitById.get(item.productUnitId);
+        const productUnit = item.productUnitId
+          ? unitById.get(item.productUnitId)
+          : await tx.productUnit.findFirst({ where: { productId: item.productId, isBaseUnit: true }, include: { unit: true } });
         if (!productUnit || productUnit.productId !== item.productId) {
           throw new HttpError(`Product unit does not match product: ${item.productUnitId}`, 400, 'PRODUCT_UNIT_MISMATCH');
         }
 
         const baseQty = item.qty * productUnit.conversion;
-        const batch = item.batchId
+        let batch = item.batchId
           ? await tx.productBatch.findFirst({
               where: {
                 id: item.batchId,
@@ -155,7 +191,15 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
               orderBy: [{ expiredDate: 'asc' }, { createdAt: 'asc' }],
             });
 
+        let allowEmptyStock = false;
         if (!batch || batch.stock < baseQty) {
+          await authorize('sell_empty_stock');
+          allowEmptyStock = true;
+          batch = item.batchId
+            ? await tx.productBatch.findFirst({ where: { id: item.batchId, tenantId, branchId, productId: item.productId, status: 'AVAILABLE' } })
+            : await tx.productBatch.findFirst({ where: { tenantId, branchId, productId: item.productId, status: 'AVAILABLE' }, orderBy: [{ expiredDate: 'asc' }, { createdAt: 'asc' }] });
+        }
+        if (!batch) {
           throw new HttpError(`Insufficient stock for product: ${item.productId}`, 409, 'INSUFFICIENT_STOCK');
         }
 
@@ -165,7 +209,7 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
             tenantId,
             branchId,
             status: 'AVAILABLE',
-            stock: { gte: baseQty },
+            ...(allowEmptyStock ? {} : { stock: { gte: baseQty } }),
           },
           data: { stock: { decrement: baseQty } },
         });
@@ -176,13 +220,15 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
 
         const unitPrice = item.unitPrice ?? Number(productUnit.sellingPrice);
         const subtotal = item.qty * unitPrice - item.discountAmount;
+        if (subtotal < 0) throw new HttpError(`Discount exceeds line total for product: ${item.productId}`, 400, 'INVALID_DISCOUNT');
+        grossAmount += item.qty * unitPrice;
         totalAmount += subtotal;
         costAmount += baseQty * Number(batch.buyPrice);
 
         saleItems.push({
           tenantId,
           productId: item.productId,
-          productUnitId: item.productUnitId,
+          productUnitId: productUnit.id,
           batchId: batch.id,
           qty: item.qty,
           baseQty,
@@ -194,8 +240,12 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
         });
       }
 
+      const itemDiscountAmount = payload.items.reduce((sum, item) => sum + item.discountAmount, 0);
+      if (payload.discountAmount + itemDiscountAmount > grossAmount * 0.5) await authorize('discount_over_50');
+
       const grandTotal = totalAmount - payload.discountAmount + payload.taxAmount;
-      const paidAmount = payload.payments.reduce((sum, payment) => sum + payment.amount, 0);
+      if (grandTotal < 0) throw new HttpError('Discount and tax produce an invalid total', 400, 'INVALID_TOTAL');
+      const paidAmount = payload.payments.filter((payment) => payment.method !== 'CREDIT').reduce((sum, payment) => sum + payment.amount, 0);
       const createdSale = await tx.sale.create({
         data: {
           tenantId,
@@ -254,8 +304,9 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
       const cashLikePaidAmount = payload.payments
         .filter((payment) => payment.method !== 'CREDIT')
         .reduce((sum, payment) => sum + payment.amount, 0);
+      const cashCollectedAmount = Math.max(0, cashLikePaidAmount - Math.max(0, paidAmount - grandTotal));
 
-      if (cashLikePaidAmount > 0) {
+      if (cashCollectedAmount > 0) {
         const cashAccount = await findOrCreatePosCashAccount(tx, tenantId, branchId);
         await tx.cashMutation.create({
           data: {
@@ -263,7 +314,7 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
             branchId,
             cashAccountId: cashAccount.id,
             type: 'SALE_PAYMENT',
-            amount: money(cashLikePaidAmount),
+            amount: money(cashCollectedAmount),
             refType: 'Sale',
             refId: createdSale.id,
             notes: `POS payment ${createdSale.invoiceNumber}`,
@@ -272,7 +323,7 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
         });
         await tx.cashAccount.update({
           where: { id: cashAccount.id },
-          data: { balance: { increment: cashLikePaidAmount } },
+            data: { balance: { increment: cashCollectedAmount } },
         });
       }
 
@@ -289,6 +340,10 @@ export const checkout = async (req: Request, res: Response, next: NextFunction) 
             status: paidAmount > 0 ? 'PARTIAL' : 'UNPAID',
           },
         });
+      }
+
+      for (const action of authorizedActions) {
+        await consumeSupervisorAuthorizations(tx, payload.supervisorAuthorizationIds, { tenantId, branchId, requestedById: cashierId, action });
       }
 
       const responseBody = {

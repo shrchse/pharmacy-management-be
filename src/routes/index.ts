@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import authRoutes from '../modules/auth/auth.routes';
+import auditRoutes from '../modules/audit/audit.routes';
+import returnsRoutes from '../modules/returns/returns.routes';
+import accessRoutes from '../modules/access/access.routes';
 import cashierShiftRoutes from '../modules/cashier-shifts/cashierShift.routes';
 import complianceRoutes from '../modules/compliance/compliance.routes';
 import crmRoutes from '../modules/crm/crm.routes';
@@ -22,6 +25,9 @@ const router = Router();
 router.use('/health', healthRoutes);
 router.use('/docs', docsRoutes);
 router.use('/auth', authRoutes);
+router.use('/', accessRoutes);
+router.use('/', auditRoutes);
+router.use('/', returnsRoutes);
 router.use('/', tenantRoutes);
 router.use('/', masterDataRoutes);
 router.use('/', productsRoutes);

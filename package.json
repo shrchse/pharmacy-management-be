@@ -20,6 +20,9 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:studio": "prisma studio"
   },
+  "overrides": {
+    "deepmerge-ts": "^8.0.0"
+  },
   "keywords": [
     "express",
     "typescript",

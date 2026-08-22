@@ -37,6 +37,9 @@ const internalMutationSchema = z.object({
   notes: z.string().optional(),
 });
 
+const opnameUpdateSchema = z.object({ notes: z.string().optional() });
+const physicalCountsSchema = z.object({ items: z.array(z.object({ batchId: z.string().uuid(), realStock: z.number().int().min(0) })).min(1) });
+
 export const stockOverview = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = getTenantId(req);
@@ -270,6 +273,54 @@ export const createOpname = async (req: Request, res: Response, next: NextFuncti
   }
 };
 
+export const getOpnameItems = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const branchId = getBranchId(req);
+    const id = idParamSchema.parse(req.params).id;
+    const opname = await prisma.stockOpname.findFirstOrThrow({ where: { id, tenantId, branchId }, include: { items: { include: { batch: { include: { product: true, location: true } } } } } });
+    return sendSuccess(res, opname.items, 'Stock opname items retrieved');
+  } catch (error) { return next(error); }
+};
+
+export const updateOpname = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const branchId = getBranchId(req);
+    const id = idParamSchema.parse(req.params).id;
+    const payload = opnameUpdateSchema.parse(req.body);
+    const updated = await prisma.$transaction(async (tx) => {
+      const before = await tx.stockOpname.findFirstOrThrow({ where: { id, tenantId, branchId, status: 'DRAFT' }, include: { items: true } });
+      const result = await tx.stockOpname.update({ where: { id }, data: { notes: payload.notes }, include: { items: true } });
+      await auditLog({ tenantId, branchId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'StockOpname', entityId: id, before, after: result, req }, tx);
+      return result;
+    });
+    return sendSuccess(res, updated, 'Stock opname updated');
+  } catch (error) { return next(error); }
+};
+
+export const updatePhysicalCounts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const branchId = getBranchId(req);
+    const id = idParamSchema.parse(req.params).id;
+    const payload = physicalCountsSchema.parse(req.body);
+    const updated = await prisma.$transaction(async (tx) => {
+      const opname = await tx.stockOpname.findFirstOrThrow({ where: { id, tenantId, branchId, status: 'DRAFT' }, include: { items: true } });
+      const itemsByBatch = new Map(opname.items.map((item) => [item.batchId, item]));
+      for (const input of payload.items) {
+        const item = itemsByBatch.get(input.batchId);
+        if (!item) throw new HttpError(`Batch is not part of opname: ${input.batchId}`, 400, 'OPNAME_BATCH_INVALID');
+        await tx.stockOpnameItem.update({ where: { id: item.id }, data: { realStock: input.realStock, difference: input.realStock - item.systemStock } });
+      }
+      const result = await tx.stockOpname.findUniqueOrThrow({ where: { id }, include: { items: true } });
+      await auditLog({ tenantId, branchId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'StockOpname', entityId: id, before: opname, after: result, req }, tx);
+      return result;
+    });
+    return sendSuccess(res, updated, 'Stock opname counts updated');
+  } catch (error) { return next(error); }
+};
+
 export const closeOpname = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = getTenantId(req);
@@ -366,4 +417,18 @@ export const internalMutation = async (req: Request, res: Response, next: NextFu
   } catch (error) {
     return next(error);
   }
+};
+
+export const listInternalMutations = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const branchId = getBranchId(req);
+    const ledgers = await prisma.stockLedger.findMany({
+      where: { tenantId, branchId, refType: 'InternalMutation' },
+      include: { batch: { include: { product: true } }, location: true, user: { select: { id: true, name: true } } },
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+    });
+    return sendSuccess(res, ledgers, 'Internal stock mutations retrieved');
+  } catch (error) { return next(error); }
 };

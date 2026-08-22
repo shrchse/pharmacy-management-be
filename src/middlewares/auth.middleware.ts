@@ -100,6 +100,26 @@ export const requireAnyPermission = (...permissions: string[]) => {
   };
 };
 
+export const requireSuperadmin = (req: Request, res: Response, next: NextFunction) => {
+  requireAuth(req, res, async () => {
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: req.auth?.userId },
+        include: { role: { include: { permissions: { include: { permission: true } } } } },
+      });
+      const normalizedRole = user?.role.name.replace(/[_-]/g, '').toLowerCase();
+      const isSuperadmin = normalizedRole === 'superadmin';
+      const hasPermission = user?.role.permissions.some(({ permission }) => permission.code === 'internal.tenant.manage');
+      if (!isSuperadmin || !hasPermission) {
+        return sendError(res, 'Superadmin access required', 403, undefined, 'PERMISSION_DENIED');
+      }
+      return next();
+    } catch (error) {
+      return next(error);
+    }
+  });
+};
+
 export const requireFeature = (featureCode: string) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     requireAuth(req, res, async () => {
@@ -117,6 +137,20 @@ export const requireFeature = (featureCode: string) => {
             },
           },
         });
+
+        const tenant = await prisma.tenant.findUnique({
+          where: { id: tenantId },
+          select: { subscriptionStatus: true, trialEndsAt: true, subscriptionEndsAt: true },
+        });
+        if (!tenant) {
+          return sendError(res, 'Tenant not found', 404, undefined, 'TENANT_NOT_FOUND');
+        }
+        const now = new Date();
+        const trialExpired = tenant.subscriptionStatus === 'TRIAL' && (!tenant.trialEndsAt || tenant.trialEndsAt <= now);
+        const subscriptionExpired = tenant.subscriptionEndsAt !== null && tenant.subscriptionEndsAt <= now;
+        if (['EXPIRED', 'CANCELLED', 'SUSPENDED'].includes(tenant.subscriptionStatus) || trialExpired || subscriptionExpired) {
+          return sendError(res, 'Tenant subscription is not active', 403, { featureCode }, 'SUBSCRIPTION_INACTIVE');
+        }
 
         if (!feature?.enabled) {
           return sendError(res, 'Feature is not enabled for this tenant', 403, { featureCode }, 'FEATURE_LOCKED');

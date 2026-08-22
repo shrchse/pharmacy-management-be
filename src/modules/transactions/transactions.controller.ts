@@ -4,6 +4,7 @@ import { auditLog } from '../../lib/audit';
 import { prisma } from '../../lib/prisma';
 import { HttpError, sendSuccess } from '../../utils/apiResponse';
 import { getBranchId, getTenantId } from '../../utils/scope';
+import { assertSupervisorAuthorizations, consumeSupervisorAuthorizations } from '../../lib/supervisor';
 
 const money = (value: number) => value.toFixed(2);
 
@@ -13,6 +14,7 @@ const idParamSchema = z.object({
 
 const cancelSchema = z.object({
   reason: z.string().min(1),
+  supervisorAuthorizationIds: z.array(z.string().uuid()).default([]),
 });
 
 const transactionInclude = {
@@ -91,6 +93,9 @@ export const cancelTransaction = async (req: Request, res: Response, next: NextF
       if (before.status !== 'COMPLETED') {
         throw new HttpError('Only completed transactions can be cancelled', 409, 'TRANSACTION_NOT_COMPLETED');
       }
+      if (before.paymentStatus === 'PAID') {
+        await assertSupervisorAuthorizations(tx, payload.supervisorAuthorizationIds, { tenantId, branchId, requestedById: req.auth!.userId, action: 'cancel_paid_trx' });
+      }
 
       for (const item of before.saleItems) {
         if (!item.batchId) continue;
@@ -166,6 +171,10 @@ export const cancelTransaction = async (req: Request, res: Response, next: NextF
         },
         include: transactionInclude,
       });
+
+      if (before.paymentStatus === 'PAID') {
+        await consumeSupervisorAuthorizations(tx, payload.supervisorAuthorizationIds, { tenantId, branchId, requestedById: req.auth!.userId, action: 'cancel_paid_trx' });
+      }
 
       await auditLog({ tenantId, branchId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'Sale', entityId: id, before, after: updated, req }, tx);
       return updated;

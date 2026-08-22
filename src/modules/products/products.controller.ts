@@ -4,6 +4,7 @@ import { auditLog } from '../../lib/audit';
 import { prisma } from '../../lib/prisma';
 import { HttpError, sendSuccess } from '../../utils/apiResponse';
 import { getTenantId } from '../../utils/scope';
+import { assertSupervisorAuthorizations, consumeSupervisorAuthorizations } from '../../lib/supervisor';
 
 const idParamSchema = z.object({
   id: z.string().uuid(),
@@ -36,6 +37,7 @@ const productSchema = z.object({
 
 const updateProductSchema = productSchema.omit({ unitId: true, conversion: true }).partial().extend({
   status: z.enum(['ACTIVE', 'INACTIVE', 'DISCONTINUED']).optional(),
+  supervisorAuthorizationIds: z.array(z.string().uuid()).default([]),
 });
 
 const money = (value: number) => value.toFixed(2);
@@ -160,11 +162,18 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
 export const updateProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = getTenantId(req);
+    const branchId = req.auth?.branchId;
     const { id } = idParamSchema.parse(req.params);
     const payload = updateProductSchema.parse(req.body);
     const product = await prisma.$transaction(async (tx) => {
       const before = await tx.product.findFirstOrThrow({ where: { id, tenantId }, include: productInclude });
-      const { sellingPrice, purchasePrice, ...productPayload } = payload;
+      const { sellingPrice, purchasePrice, supervisorAuthorizationIds, ...productPayload } = payload;
+      const pricePolicy = await tx.tenantPolicy.findUnique({ where: { tenantId_code: { tenantId, code: 'inventory.requireSupervisorForPriceEdit' } } });
+      const priceGateEnabled = pricePolicy?.value === true || (typeof pricePolicy?.value === 'object' && pricePolicy.value !== null && !Array.isArray(pricePolicy.value) && (pricePolicy.value as { enabled?: unknown }).enabled === true);
+      if (sellingPrice !== undefined && priceGateEnabled) {
+        if (!branchId) throw new HttpError('branchId is required for supervisor authorization', 400, 'BRANCH_REQUIRED');
+        await assertSupervisorAuthorizations(tx, supervisorAuthorizationIds, { tenantId, branchId, requestedById: req.auth!.userId, action: 'edit_sell_price' });
+      }
       const updated = await tx.product.update({
         where: { id },
         data: productPayload,
@@ -184,6 +193,10 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
         }
       }
 
+      if (sellingPrice !== undefined && priceGateEnabled) {
+        await consumeSupervisorAuthorizations(tx, supervisorAuthorizationIds, { tenantId, branchId: branchId!, requestedById: req.auth!.userId, action: 'edit_sell_price' });
+      }
+
       const withUnits = await tx.product.findUniqueOrThrow({ where: { id }, include: productInclude });
       await auditLog({ tenantId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'Product', entityId: id, before, after: withUnits, req }, tx);
       return updated;
@@ -199,6 +212,8 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
   try {
     const tenantId = getTenantId(req);
     const { id } = idParamSchema.parse(req.params);
+    const branchId = req.auth?.branchId;
+    const supervisorAuthorizationIds = z.array(z.string().uuid()).default([]).parse(req.body?.supervisorAuthorizationIds);
     const result = await prisma.$transaction(async (tx) => {
       const product = await tx.product.findFirstOrThrow({ where: { id, tenantId }, include: productInclude });
       const [saleItems, purchaseItems, batches, stockLedgers] = await Promise.all([
@@ -208,6 +223,20 @@ export const deleteProduct = async (req: Request, res: Response, next: NextFunct
         tx.stockLedger.count({ where: { tenantId, productId: id } }),
       ]);
       const historyCount = saleItems + purchaseItems + batches + stockLedgers;
+
+      if (historyCount > 0) {
+        if (!branchId) throw new HttpError('branchId is required for supervisor authorization', 400, 'BRANCH_REQUIRED');
+        await assertSupervisorAuthorizations(tx, supervisorAuthorizationIds, { tenantId, branchId, requestedById: req.auth!.userId, action: 'delete_product_with_history' });
+      }
+
+      if (historyCount > 0) {
+        // The authorization above is intentionally consumed in the same transaction
+        // as the delete, so a failed delete cannot burn a supervisor approval.
+        await tx.product.update({ where: { id }, data: { status: 'DISCONTINUED' } });
+        await consumeSupervisorAuthorizations(tx, supervisorAuthorizationIds, { tenantId, branchId: branchId!, requestedById: req.auth!.userId, action: 'delete_product_with_history' });
+        await auditLog({ tenantId, actorId: req.auth?.userId, action: 'DELETE', entity: 'Product', entityId: id, before: product, req }, tx);
+        return { id, deleted: false, discontinued: true };
+      }
 
       if (historyCount > 0) {
         throw new HttpError('Product has transaction or stock history and cannot be deleted directly', 409, 'PRODUCT_HAS_HISTORY', {

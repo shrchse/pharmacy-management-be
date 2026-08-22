@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requirePermission } from '../../middlewares/auth.middleware';
+import { requireFeature, requirePermission } from '../../middlewares/auth.middleware';
 import {
   agingDebts,
   agingReceivables,
@@ -20,22 +20,24 @@ import {
 
 const router = Router();
 
-router.get('/cash', requirePermission('finance.manage'), listCashAccounts);
-router.post('/cash', requirePermission('finance.manage'), createCashAccount);
-router.get('/cash/mutations', requirePermission('finance.manage'), listCashMutations);
-router.post('/cash/mutations', requirePermission('finance.manage'), createCashMutation);
+router.get('/cash', requirePermission('finance.manage'), requireFeature('finance'), listCashAccounts);
+router.post('/cash', requirePermission('finance.manage'), requireFeature('finance'), createCashAccount);
+router.get('/cash/mutations', requirePermission('finance.manage'), requireFeature('finance'), listCashMutations);
+router.post('/cash/mutations', requirePermission('finance.manage'), requireFeature('finance'), createCashMutation);
 
-router.get('/debts', requirePermission('finance.manage'), listDebts);
-router.post('/debts/:id/pay', requirePermission('finance.manage'), payDebt);
-router.get('/receivables', requirePermission('finance.manage'), listReceivables);
-router.post('/receivables/:id/pay', requirePermission('finance.manage'), payReceivable);
-router.post('/expenses', requirePermission('finance.manage'), createExpense);
+router.get('/debts', requirePermission('finance.manage'), requireFeature('finance'), listDebts);
+router.post('/debts/:id/pay', requirePermission('finance.manage'), requireFeature('finance'), payDebt);
+router.post('/debts/:id/payments', requirePermission('finance.manage'), requireFeature('finance'), payDebt);
+router.get('/receivables', requirePermission('finance.manage'), requireFeature('finance'), listReceivables);
+router.post('/receivables/:id/pay', requirePermission('finance.manage'), requireFeature('finance'), payReceivable);
+router.post('/receivables/:id/payments', requirePermission('finance.manage'), requireFeature('finance'), payReceivable);
+router.post('/expenses', requirePermission('finance.manage'), requireFeature('finance'), createExpense);
 
-router.get('/finance/pnl', requirePermission('finance.manage'), pnl);
-router.get('/finance/cash-flow', requirePermission('finance.manage'), cashFlow);
-router.get('/finance/balance-sheet', requirePermission('finance.manage'), balanceSheet);
-router.get('/finance/ratios', requirePermission('finance.manage'), ratios);
-router.get('/finance/aging-debts', requirePermission('finance.manage'), agingDebts);
-router.get('/finance/aging-receivables', requirePermission('finance.manage'), agingReceivables);
+router.get('/finance/pnl', requirePermission('finance.manage'), requireFeature('finance'), pnl);
+router.get('/finance/cash-flow', requirePermission('finance.manage'), requireFeature('finance'), cashFlow);
+router.get('/finance/balance-sheet', requirePermission('finance.manage'), requireFeature('finance'), balanceSheet);
+router.get('/finance/ratios', requirePermission('finance.manage'), requireFeature('finance'), ratios);
+router.get('/finance/aging-debts', requirePermission('finance.manage'), requireFeature('finance'), agingDebts);
+router.get('/finance/aging-receivables', requirePermission('finance.manage'), requireFeature('finance'), agingReceivables);
 
 export default router;
