@@ -7,6 +7,7 @@
     "dev": "tsx watch src/index.ts",
     "build": "rimraf dist && tsc",
     "start": "node dist/index.js",
+    "start:prod": "npm run prisma:deploy && npm start",
     "test:openapi": "node scripts/verify-openapi.cjs",
     "test:smoke": "node scripts/smoke-http.cjs",
     "test:db": "node scripts/db-readiness.cjs",
