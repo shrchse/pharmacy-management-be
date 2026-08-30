@@ -33,6 +33,15 @@ const verifyShiftSchema = z.object({
   notes: z.string().optional(),
 });
 
+const listShiftQuerySchema = z.object({
+  status: z.enum(['OPEN', 'CLOSED', 'DEPOSITED', 'VERIFIED', 'REJECTED']).optional(),
+  cashierId: z.string().uuid().optional(),
+  from: z.coerce.date().optional(),
+  to: z.coerce.date().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+
 const expectedCashForSession = async (tx: Prisma.TransactionClient, sessionId: string, startingCash: number) => {
   const cashPayments = await tx.salePayment.aggregate({
     where: {
@@ -48,6 +57,78 @@ const expectedCashForSession = async (tx: Prisma.TransactionClient, sessionId: s
   });
 
   return startingCash + Number(cashPayments._sum.amount ?? 0);
+};
+
+const elevatedShiftViewerRoles = new Set(['OWNER', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN']);
+
+const canViewAllShifts = async (userId: string) => {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: { select: { name: true } } } });
+  return Boolean(user?.role && elevatedShiftViewerRoles.has(user.role.name.replace(/[_-]/g, '').toUpperCase()));
+};
+
+export const listShifts = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const branchId = getBranchId(req);
+    const userId = req.auth?.userId;
+    if (!userId) throw new HttpError('Authentication required', 401, 'UNAUTHENTICATED');
+
+    const query = listShiftQuerySchema.parse(req.query);
+    const elevated = await canViewAllShifts(userId);
+    const requestedCashierId = query.cashierId;
+    const cashierId = elevated ? requestedCashierId : userId;
+    const openedAt = query.from || query.to ? {
+      ...(query.from ? { gte: query.from } : {}),
+      ...(query.to ? { lte: query.to } : {}),
+    } : undefined;
+    const where = { tenantId, branchId, status: query.status, cashierId, openedAt };
+    // The project Prisma proxy wraps model calls in regular Promises, which
+    // cannot be passed to Prisma's array-style $transaction API.
+    const [shifts, total] = await Promise.all([
+      prisma.cashierSession.findMany({
+        where,
+        include: {
+          cashier: { select: { id: true, name: true, email: true } },
+          branch: true,
+        },
+        orderBy: { openedAt: 'desc' },
+        skip: (query.page - 1) * query.limit,
+        take: query.limit,
+      }),
+      prisma.cashierSession.count({ where }),
+    ]);
+
+    return sendSuccess(res, shifts, 'Cashier shifts retrieved', 200, {
+      count: shifts.length,
+      total,
+      page: query.page,
+      limit: query.limit,
+    });
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const getActiveShift = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const branchId = getBranchId(req);
+    const cashierId = req.auth?.userId;
+    if (!cashierId) throw new HttpError('Authentication required', 401, 'UNAUTHENTICATED');
+
+    const shift = await prisma.cashierSession.findFirst({
+      where: { tenantId, branchId, cashierId, status: 'OPEN', closedAt: null },
+      include: {
+        cashier: { select: { id: true, name: true, email: true } },
+        branch: true,
+      },
+      orderBy: { openedAt: 'desc' },
+    });
+
+    return sendSuccess(res, shift, 'Active cashier shift retrieved');
+  } catch (error) {
+    return next(error);
+  }
 };
 
 export const openShift = async (req: Request, res: Response, next: NextFunction) => {

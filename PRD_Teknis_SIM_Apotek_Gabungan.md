@@ -156,7 +156,8 @@ Setiap write menghasilkan record dengan field:
 Platform        Tenant, Organization, Outlet
 Identity        User, Role, Permission, RolePermission, SupervisorAction
 Commercial      Entitlement, Subscription
-MasterData      Product, ProductCategory, Unit(Satuan), Rack(Rak), ProductBarcode,
+MasterData      ProductCatalog(global), TenantProduct(assortment/config tenant),
+                ProductUnit, ProductCategory, Unit(Satuan), Rack(Rak), ProductBarcode,
                 Supplier, Customer, Doctor/Practitioner
 Inventory       ProductBatch, StockBalance, StockLedger(movement), StockOpname,
                 StockOpnameItem, StockAdjustment, DefektaItem, InternalMutation
@@ -177,7 +178,9 @@ MultiOutlet(MVP2) OutletGroup, SalesTarget, SalesTargetPeriod, KPI, KPIValue,
                 CashDeposit, CashVerification, BranchSummary
 AddOns          Retail(PriceTag, Promo), HRD(Shift, KPIEmployee), SOP(Doc, Task)
 ```
-Total inti berada di kisaran **45–50 object** setelah gap ditambahkan (naik dari ~40 di blueprint awal karena penambahan Patient/Practitioner/Dispensing detail dan CashierShift/CashReconciliation eksplisit).
+`ProductCatalog` adalah source of truth global untuk identitas produk yang dapat digunakan lintas tenant. `TenantProduct` adalah mapping/assortment tenant yang menyimpan konfigurasi bisnis seperti harga jual, HPP, minimum stok, status aktif, dan nama tampilan lokal. `ProductBatch` tetap menyimpan stok aktual per tenant dan cabang; stok, harga, batch, dan supplier tidak pernah dibagi lintas tenant.
+
+Total inti berada di kisaran **47–52 object** setelah penambahan katalog global dan mapping tenant.
 
 ---
 
@@ -197,8 +200,12 @@ Total inti berada di kisaran **45–50 object** setelah gap ditambahkan (naik da
 Paket: `start`/`grow`/`scale`. Feature toggle: `inventory, purchasing, finance, multi_outlet, resep, retail, crm, hrd, sop`. Add-on: `reminder_ed, loyalty, wa_broadcast, price_tag`.
 
 ### 6.2 Master Data — MVP1 P0
-CRUD: `/products, /categories, /units, /racks, /suppliers, /customers, /doctors(→practitioners), /users, /outlets`.
-Aturan khusus produk: search by nama/kandungan/SKU/barcode; validasi harga jual/HPP/stok minimum/ED/kategori/rak; **delete produk dengan riwayat wajib supervisor authorization**; **update harga jual wajib supervisor authorization** jika policy tenant mengaktifkan gate.
+CRUD tenant: `/products, /categories, /units, /racks, /suppliers, /customers, /doctors(→practitioners), /users, /outlets`.
+Katalog global platform: `/product-catalog` untuk superadmin/platform dan `/tenant-products` untuk mengaktifkan atau menonaktifkan item katalog pada tenant aktif.
+
+`ProductCatalog` hanya berisi atribut identitas yang bersifat umum, misalnya nama generik, komposisi, barcode, manufacturer, dan klasifikasi. `TenantProduct` menyimpan atribut operasional tenant, misalnya harga jual, HPP, minimum stok, policy resep, status aktif, dan custom name. Produk tenant dapat berasal dari katalog global atau dibuat sebagai produk lokal tenant untuk private label/racikan.
+
+Aturan khusus produk: search by nama/kandungan/SKU/barcode; validasi harga jual/HPP/stok minimum/ED/kategori/rak; **delete produk dengan riwayat wajib supervisor authorization**; **update harga jual wajib supervisor authorization** jika policy tenant mengaktifkan gate. Target akhirnya semua endpoint membaca `TenantProduct`, bukan langsung menganggap `ProductCatalog` sebagai stok atau harga. Selama MVP1, `Product` lama dipertahankan sebagai compatibility projection dan ditautkan melalui `Product.catalogId`; migrasi foreign key operasional ke `TenantProduct` dilakukan setelah kontrak FE stabil.
 
 ### 6.3 Inventory, Batch & FEFO — MVP1 P0 (gap ditambahkan)
 | Method | Path | Fungsi |
@@ -285,7 +292,7 @@ Tambahan: **Digital BAST** (PDF) untuk tiap transfer — sender, receiver, item,
 | Phase | Isi | Setara |
 |---|---|---|
 | **Phase 0 — Contract Foundation** | OpenAPI awal dari tipe FE; API client `src/services/api.ts`; `VITE_API_BASE_URL`; repository fallback mock saat env kosong | — |
-| **Phase 1 — Core Operasional** | Auth/RBAC/RLS; Product/Category/Unit/Rack/Batch; Supplier/Customer/Doctor/Outlet; POS checkout atomik + idempotency; Transaksi + receipt + print; Stock movement + FEFO; **Cashier Shift + Blind Close** | Blueprint P0 Foundation + P1 Operational Core |
+| **Phase 1 — Core Operasional** | Auth/RBAC/RLS; ProductCatalog global + TenantProduct assortment; Category/Unit/Rack/Batch; Supplier/Customer/Doctor/Outlet; POS checkout atomik + idempotency; Transaksi + receipt + print; Stock movement + FEFO; **Cashier Shift + Blind Close** | Blueprint P0 Foundation + P1 Operational Core |
 | **Phase 2 — Pembelian, Stok Lanjut, Keuangan, Compliance** | PO + APJ approval, faktur, retur; Hutang/piutang; Kas; Opname/defekta/mutasi internal/reminder ED; **License/Compliance alert** | Blueprint P1–P2 |
 | **Phase 3 — Pharmacy, CRM, SaaS & Owner (single outlet)** | Patient/Prescription/Dispensing dasar; CRM tiering; Tenant/entitlement/subscription; User management; Audit log; Owner dashboard ringkas, warning, rekomendasi; Finance analysis | Blueprint P2–P3 |
 | **Phase 4 — Multi-Cabang & Add-On** | Command center multi-cabang + state machine transfer + BAST; KPI/Target; Redis cache dashboard konsolidasi; Resep lanjutan, CRM campaign, Retail, HRD, SOP | Blueprint P4 (MVP2) |
@@ -297,17 +304,18 @@ Tambahan: **Digital BAST** (PDF) untuk tiap transfer — sender, receiver, item,
 
 1. FE bisa login, melihat menu sesuai role, dan logout via API.
 2. `productRepo.list()` dan repo CRUD inti bisa diarahkan ke API tanpa perubahan komponen page.
-3. Checkout POS: menghasilkan transaksi, memilih batch via FEFO, menurunkan stok, membuat stock card, menampilkan & mencetak struk, dan **anti-duplikasi via idempotency key**.
-4. Blind Close: kasir tidak melihat expected cash sebelum input actual cash; variance dihitung server-side dan butuh approval leader.
-5. Pembayaran hutang/piutang mengubah status dan membuat cash ledger.
-6. Approval Purchase Order ke PBF wajib PIN APJ, terpisah dari password login.
-7. License SIA/SIPA/APJ mengeluarkan notifikasi otomatis 90/60/30/7 hari sebelum expiry.
-8. Permission dan entitlement dicek di backend; FE mendapat error `403` yang bisa dipetakan ke halaman forbidden/module locked.
-9. Semua write menghasilkan audit log dengan schema lengkap (§4.6).
-10. Row-Level Security aktif: query lintas tenant tanpa filter eksplisit tetap tidak mengembalikan data tenant lain.
-11. Seed demo tersedia untuk parity dengan data mock FE.
-12. Backend menyediakan health check dan OpenAPI docs.
-13. (MVP2) Mutasi antar outlet mengikuti state machine penuh dan menghasilkan BAST PDF sebelum stok dianggap berpindah.
+3. Produk umum dapat dikelola sekali di `ProductCatalog`, diaktifkan per tenant melalui `TenantProduct`, dan tidak membuat stok/harga lintas tenant menjadi shared.
+4. Checkout POS: menghasilkan transaksi, memilih batch via FEFO, menurunkan stok, membuat stock card, menampilkan & mencetak struk, dan **anti-duplikasi via idempotency key**.
+5. Blind Close: kasir tidak melihat expected cash sebelum input actual cash; variance dihitung server-side dan butuh approval leader.
+6. Pembayaran hutang/piutang mengubah status dan membuat cash ledger.
+7. Approval Purchase Order ke PBF wajib PIN APJ, terpisah dari password login.
+8. License SIA/SIPA/APJ mengeluarkan notifikasi otomatis 90/60/30/7 hari sebelum expiry.
+9. Permission dan entitlement dicek di backend; FE mendapat error `403` yang bisa dipetakan ke halaman forbidden/module locked.
+10. Semua write menghasilkan audit log dengan schema lengkap (§4.6).
+11. Row-Level Security aktif: query lintas tenant tanpa filter eksplisit tetap tidak mengembalikan data tenant lain.
+12. Seed demo tersedia untuk parity dengan data mock FE.
+13. Backend menyediakan health check dan OpenAPI docs.
+14. (MVP2) Mutasi antar outlet mengikuti state machine penuh dan menghasilkan BAST PDF sebelum stok dianggap berpindah.
 
 ---
 
@@ -321,6 +329,7 @@ Tambahan: **Digital BAST** (PDF) untuk tiap transfer — sender, receiver, item,
 | Analytics/dashboard berat (terutama MVP2 konsolidasi) | Materialized view/cache per tenant/outlet; Redis dipasang saat diperlukan, bukan default |
 | Otorisasi ganda FE/backend | Backend jadi final authority; FE hanya untuk UX gating |
 | Kebocoran data lintas tenant akibat lupa filter | RLS sebagai lapisan kedua wajib, bukan opsional |
+| Katalog global mengubah data operasional tenant secara tidak sengaja | Pisahkan `ProductCatalog` dari `TenantProduct`; perubahan katalog global hanya memengaruhi atribut identitas, sedangkan harga, HPP, stok, batch, dan status jual tetap tenant-scoped |
 | Stok "hilang" saat mutasi antar outlet tanpa status jelas | State machine wajib untuk `StockTransfer`, tidak boleh direct write |
 | Kompleksitas menu membengkak seperti kompetitor | Dashboard role-based/component-based, bukan 1 menu per laporan; review UX secara berkala terhadap prinsip ini |
 
@@ -343,7 +352,7 @@ Tambahan: **Digital BAST** (PDF) untuk tiap transfer — sender, receiver, item,
 
 **P0 — Foundation:** PostgreSQL, Tenant/Organization/Outlet, Auth, RBAC, RLS, Audit, ACID transaction architecture, Idempotency layer.
 
-**P1 — Operational Core:** Product/Batch/FEFO, Supplier, Purchase+APJ approval, Receiving, Inventory, Stock Opname, POS, Payment, **Cashier Shift + Blind Close**, Receipt/Print.
+**P1 — Operational Core:** ProductCatalog/TenantProduct, ProductBatch/FEFO, Supplier, Purchase+APJ approval, Receiving, Inventory, Stock Opname, POS, Payment, **Cashier Shift + Blind Close**, Receipt/Print.
 
 **P2 — Pharmacy & Control:** Patient/Practitioner/Prescription/Dispensing dasar, License/Compliance (SIA/SIPA/APJ alert), Expense, CRM basic.
 

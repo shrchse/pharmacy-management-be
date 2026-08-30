@@ -2,8 +2,15 @@
 -- Run after migrations are applied:
 --   npx prisma db execute --file prisma/seed.superadmin.sql
 --
--- Demo login:
---   superadmin@apotek.local / Password123!
+-- Demo tenant:
+--   Apotek MVP 1 Local (Cabang Utama + Gudang Pembantu)
+--
+-- Demo login (semua password: Password123!):
+--   superadmin@apotek.local
+--   owner@apotek.local
+--   admin@apotek.local
+--   apj@apotek.local          APJ PIN: 123456
+--   cashier@apotek.local
 
 BEGIN;
 
@@ -36,20 +43,22 @@ ON CONFLICT ("code") DO UPDATE SET
 
 INSERT INTO "Tenant" (
   "id", "planId", "name", "slug", "email", "phone", "address", "taxId",
-  "timezone", "currency", "subscriptionStatus", "trialEndsAt", "subscriptionEndsAt",
+  "timezone", "currency", "subscriptionStatus", "subscriptionStartedAt", "subscriptionBillingCycle", "trialEndsAt", "subscriptionEndsAt",
   "isDemo", "createdAt", "updatedAt"
 ) VALUES (
   '20000000-0000-4000-8000-000000000001',
   '10000000-0000-4000-8000-000000000001',
   'Apotek MVP 1 Local',
   'apotek-mvp1-local',
-  'superadmin@apotek.local',
+  'owner@apotek.local',
   '021-555-0101',
   'Jl. Kesehatan No. 1, Jakarta',
   '09.123.456.7-001.000',
   'Asia/Jakarta',
   'IDR',
   'ACTIVE',
+  CURRENT_TIMESTAMP,
+  'YEARLY',
   CURRENT_TIMESTAMP + INTERVAL '14 days',
   CURRENT_TIMESTAMP + INTERVAL '365 days',
   true,
@@ -64,6 +73,8 @@ ON CONFLICT ("slug") DO UPDATE SET
   "address" = EXCLUDED."address",
   "taxId" = EXCLUDED."taxId",
   "subscriptionStatus" = EXCLUDED."subscriptionStatus",
+  "subscriptionStartedAt" = EXCLUDED."subscriptionStartedAt",
+  "subscriptionBillingCycle" = EXCLUDED."subscriptionBillingCycle",
   "subscriptionEndsAt" = EXCLUDED."subscriptionEndsAt",
   "isDemo" = EXCLUDED."isDemo",
   "updatedAt" = CURRENT_TIMESTAMP;
@@ -183,7 +194,11 @@ INSERT INTO "User" (
   "id", "tenantId", "branchId", "roleId", "name", "email", "phone",
   "passwordHash", "apjPinHash", "sipaNumber", "status", "createdAt", "updatedAt"
 ) VALUES
-  ('33000000-0000-4000-8000-000000000005', '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000011', '32000000-0000-4000-8000-000000000005', 'Super Admin', 'superadmin@apotek.local', '081100000005', '$2b$10$93UIDoXKup.A8RyW1xgxsOOFP57sTgGfdQe53mLXguvueZctFCoHq', NULL, NULL, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+  ('33000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000011', '32000000-0000-4000-8000-000000000001', 'Owner Apotek', 'owner@apotek.local', '081100000001', '$2b$10$7JrsXHpWX/zQBhtgCs12MOtm6VR3HPZtj7dQcxIZUoA94Tg.yV.mO', NULL, NULL, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('33000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000011', '32000000-0000-4000-8000-000000000002', 'Apt. Andini Rahma', 'apj@apotek.local', '081100000002', '$2b$10$7JrsXHpWX/zQBhtgCs12MOtm6VR3HPZtj7dQcxIZUoA94Tg.yV.mO', '$2b$10$58NIboIKwZYA6f07WD/5Iez0eIyE0JsOvHbt0apE2cTEQIAVPBb0y', 'SIPA-MVP1-001', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('33000000-0000-4000-8000-000000000003', '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000011', '32000000-0000-4000-8000-000000000003', 'Kasir Apotek', 'cashier@apotek.local', '081100000003', '$2b$10$7JrsXHpWX/zQBhtgCs12MOtm6VR3HPZtj7dQcxIZUoA94Tg.yV.mO', NULL, NULL, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('33000000-0000-4000-8000-000000000004', '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000011', '32000000-0000-4000-8000-000000000004', 'Admin Cabang', 'admin@apotek.local', '081100000004', '$2b$10$7JrsXHpWX/zQBhtgCs12MOtm6VR3HPZtj7dQcxIZUoA94Tg.yV.mO', NULL, NULL, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+  ('33000000-0000-4000-8000-000000000005', '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000011', '32000000-0000-4000-8000-000000000005', 'Super Admin', 'superadmin@apotek.local', '081100000005', '$2b$10$7JrsXHpWX/zQBhtgCs12MOtm6VR3HPZtj7dQcxIZUoA94Tg.yV.mO', NULL, NULL, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 ON CONFLICT ("tenantId", "email") DO UPDATE SET
   "branchId" = EXCLUDED."branchId",
   "roleId" = EXCLUDED."roleId",
@@ -276,6 +291,54 @@ ON CONFLICT ("productId", "unitId") DO UPDATE SET
   "isBaseUnit" = EXCLUDED."isBaseUnit",
   "sellingPrice" = EXCLUDED."sellingPrice",
   "purchasePrice" = EXCLUDED."purchasePrice";
+
+-- Backfill the global catalog and tenant mappings for legacy MVP1 products.
+-- Compound/private-label products remain tenant-local and are not published globally.
+INSERT INTO "ProductCatalog" (
+  "globalCode", "barcode", "name", "genericName", "brandName", "registrationNumber",
+  "dosageForm", "strength", "composition", "manufacturer", "principal", "productType",
+  "controlledClass", "categoryCatalogId", "defaultUnitCatalogId", "isActive", "createdAt", "updatedAt"
+)
+SELECT DISTINCT ON (p."code")
+  p."code", p."barcode", p."name", p."genericName", p."brandName", p."registrationNumber",
+  p."dosageForm", p."strength", p."composition", p."manufacturer", p."principal", p."productType",
+  p."controlledClass", cc."id", uc."id", p."status" = 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM "Product" p
+LEFT JOIN "Category" c ON c."id" = p."categoryId"
+LEFT JOIN "CategoryCatalog" cc ON cc."code" = c."type"::text
+LEFT JOIN "ProductUnit" pu ON pu."productId" = p."id" AND pu."isBaseUnit" = true
+LEFT JOIN "Unit" u ON u."id" = pu."unitId"
+LEFT JOIN "UnitCatalog" uc ON uc."code" = u."code"
+WHERE p."productType" <> 'COMPOUND'
+ORDER BY p."code", p."updatedAt" DESC
+ON CONFLICT ("globalCode") DO UPDATE SET
+  "barcode" = EXCLUDED."barcode",
+  "name" = EXCLUDED."name",
+  "genericName" = EXCLUDED."genericName",
+  "composition" = EXCLUDED."composition",
+  "manufacturer" = EXCLUDED."manufacturer",
+  "categoryCatalogId" = EXCLUDED."categoryCatalogId",
+  "defaultUnitCatalogId" = EXCLUDED."defaultUnitCatalogId",
+  "updatedAt" = CURRENT_TIMESTAMP;
+
+UPDATE "Product" p
+SET "catalogId" = pc."id"
+FROM "ProductCatalog" pc
+WHERE pc."globalCode" = p."code"
+  AND p."productType" <> 'COMPOUND';
+
+INSERT INTO "TenantProduct" (
+  "tenantId", "catalogId", "productId", "customName", "minStock", "isActive", "createdAt", "updatedAt"
+)
+SELECT p."tenantId", pc."id", p."id", NULL, p."minStock", p."status" = 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+FROM "Product" p
+JOIN "ProductCatalog" pc ON pc."id" = p."catalogId"
+WHERE p."productType" <> 'COMPOUND'
+ON CONFLICT ("productId") DO UPDATE SET
+  "catalogId" = EXCLUDED."catalogId",
+  "minStock" = EXCLUDED."minStock",
+  "isActive" = EXCLUDED."isActive",
+  "updatedAt" = CURRENT_TIMESTAMP;
 
 INSERT INTO "StockLocation" ("id", "tenantId", "branchId", "code", "name", "type", "createdAt", "updatedAt") VALUES
   ('62000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000011', 'RACK-A1', 'Rak Obat Bebas A1', 'RACK', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
@@ -1049,7 +1112,11 @@ INSERT INTO "AnalyticsSnapshot" (
 ) VALUES
   ('90000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000011', 'CRM_CAMPAIGN', DATE_TRUNC('day', CURRENT_TIMESTAMP), '{"name":"Promo Vitamin Local","type":"PROMO","channel":"WHATSAPP","status":"SCHEDULED","segment":"SILVER","message":"Promo local seed untuk member aktif"}'::jsonb, CURRENT_TIMESTAMP),
   ('90000000-0000-4000-8000-000000000002', '20000000-0000-4000-8000-000000000001', '20000000-0000-4000-8000-000000000011', 'OWNER_DAILY_BRIEF', DATE_TRUNC('day', CURRENT_TIMESTAMP), '{"sales":{"target":1000000},"inventory":{"lowStock":1},"finance":{"overdueDebt":1,"overdueReceivable":1}}'::jsonb, CURRENT_TIMESTAMP)
-ON CONFLICT ("tenantId", "branchId", "scope", "period") DO UPDATE SET
+ON CONFLICT ("id") DO UPDATE SET
+  "tenantId" = EXCLUDED."tenantId",
+  "branchId" = EXCLUDED."branchId",
+  "scope" = EXCLUDED."scope",
+  "period" = EXCLUDED."period",
   "metrics" = EXCLUDED."metrics",
   "createdAt" = CURRENT_TIMESTAMP;
 
@@ -1167,4 +1234,3 @@ ON CONFLICT ("id") DO UPDATE SET
   "createdAt" = EXCLUDED."createdAt";
 
 COMMIT;
-

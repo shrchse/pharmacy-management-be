@@ -70,8 +70,19 @@ Sources checked: `PRD.md`, `prisma/schema.prisma`, `src/**`, `package.json`, `RE
 - [ ] Add-on module APIs: resep, CRM, retail, HRD, SOP.
 - [ ] Automated tests.
 - [ ] CI/build verification config.
+- [ ] MVP1 import/export file workflow (product master, opening stock, and operational reports).
 
 ## Schema Coverage Checklist
+
+### Product Catalog Architecture Decision
+
+- [x] Add `ProductCatalog` as the global platform master for reusable product identity.
+- [x] Add `TenantProduct` as the tenant assortment/configuration mapping.
+- [x] Keep selling price, HPP, minimum stock, prescription policy, custom name, and active status on `TenantProduct` (with legacy `Product` compatibility projection during MVP1).
+- [x] Keep `ProductBatch` tenant/branch-scoped for stock, expiry, and buy price.
+- [x] Allow tenant-local products for private label and compounding use cases at the mapping contract level.
+- [x] Add RLS/read rules so global catalog is readable according to platform policy, while tenant mappings and all operational data remain tenant-scoped.
+- [ ] Decide whether the existing `Product` model is migrated into `TenantProduct` or retained as a compatibility projection during MVP1.
 
 ### SaaS, Tenant, and Access Control
 
@@ -324,12 +335,22 @@ Goal: make backend contract stable before adding more domain modules.
 ### 3. Master Data
 
 - [x] Schema includes products, categories, units, suppliers, customers, doctors, users, and branches.
+- [x] Implement `ProductCatalog` global master and `TenantProduct` tenant mapping before extending product CRUD.
+- [ ] Define which fields are global identity versus tenant-owned operational configuration.
+- [x] Add product activation flow: select catalog item, configure tenant fields, then expose it to POS/purchasing/inventory.
+- [x] Add tenant-local product compatibility flow for private label/racikan.
 - [x] `POST /api/v1/tenants/:tenantId/categories` creates category.
 - [x] `POST /api/v1/units` creates unit.
 - [x] `GET /api/v1/products` lists products by tenant scope.
 - [x] `GET /api/v1/tenants/:tenantId/products` lists products by tenant param.
 - [x] `POST /api/v1/products` creates product and base product unit.
 - [ ] Implement repository-compatible generic CRUD:
+  - `GET /api/v1/product-catalog`
+  - `POST /api/v1/product-catalog` (superadmin/platform)
+  - `GET /api/v1/tenant-products`
+  - `POST /api/v1/tenant-products`
+  - `PATCH /api/v1/tenant-products/:id`
+  - `DELETE /api/v1/tenant-products/:id`
   - `GET /api/v1/products`
   - `GET /api/v1/products/:id`
   - `POST /api/v1/products`
@@ -358,6 +379,31 @@ Goal: make backend contract stable before adding more domain modules.
 - [ ] Require supervisor authorization to delete product with transaction history.
 - [ ] Require supervisor authorization to edit selling price when tenant policy enables gate.
 - [ ] Write audit log for every master data write.
+
+### 3.1 Import and Export (MVP1)
+
+Import/export is part of MVP1. The backend schema and business rules remain the source of truth; Excel is a versioned transport format and must not become a direct database dump.
+
+- [ ] Define and version the official Excel template, for example `product-import-v1.xlsx`.
+- [ ] Provide template/reference-data download with valid category, unit, supplier, branch, and rack codes.
+- [ ] Support product master import for catalog/product/tenant-product fields.
+- [ ] Support product unit import with base-unit, conversion, barcode, selling price, and purchase price validation.
+- [ ] Support opening-stock import as batch/opname/adjustment movements, not direct stock overwrites.
+- [ ] Resolve references by business keys (`product_code`, `barcode`, `category_code`, `unit_code`, `supplier_code`, `branch_code`), never by database UUID supplied by users.
+- [ ] Add import preview/dry-run endpoint before commit.
+- [ ] Return row-level validation errors and downloadable error report.
+- [ ] Make import atomic per file and idempotent/upsert-safe to prevent duplicate master data.
+- [ ] Enforce tenant, branch, permission, entitlement, and supervisor rules during import.
+- [ ] Write audit records for template download, preview, commit, and rejected rows.
+- [ ] Add stock export endpoint for tenant/branch overview, batches, locations, and stock card.
+- [ ] Add export endpoints for products, transactions, purchases, debts/receivables, cash, audit logs, and owner/analysis reports required by FE.
+- [ ] Support the same filters as the corresponding list/report pages, including branch and date range.
+- [ ] Define supported formats (`csv`, `xlsx`, and `pdf` only where layout requires it).
+- [ ] Return correct file bytes, `Content-Type`, `Content-Disposition`, deterministic filename, and timezone metadata.
+- [ ] Enforce export permission/entitlement and record `AuditAction.EXPORT` with tenant/branch/filter metadata.
+- [ ] Decide synchronous versus asynchronous export jobs for large datasets and expose job status/download endpoints if needed.
+- [ ] Add repository/API client contracts in FE for Blob download and multipart upload; pages must not implement business mapping themselves.
+- [ ] Add integration tests for valid import, invalid rows, duplicate/upsert, tenant isolation, stock opening balance, filtered export, and permission denial.
 
 ### 4. POS and Transactions
 
@@ -610,6 +656,10 @@ Goal: make backend contract stable before adding more domain modules.
   - Missing: full demo seed parity.
 - [x] AC8: Backend provides health check.
 - [ ] AC8: Backend provides OpenAPI docs.
+- [ ] AC9: MVP1 import/export works through versioned templates and protected file endpoints.
+  - Import: product master, units, and opening stock support preview, validation, atomic commit, idempotency, and row-level errors.
+  - Export: stock tenant/branch data and required operational reports support filters, CSV/XLSX/PDF contract, download headers, authorization, and audit.
+  - FE consumes repository methods for upload/download without page-level data-layer logic.
 
 ## Suggested Implementation Order
 

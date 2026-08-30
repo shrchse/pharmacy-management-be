@@ -1,24 +1,40 @@
 # Prisma seed files
 
-## Seed untuk UI integration
+## Seed lengkap untuk UI integration
 
-Use `seed.superadmin.sql` after applying migrations:
+Jalankan migration lalu seed idempotent berikut:
 
 ```bash
-npx prisma db execute --file prisma/seed.superadmin.sql
+npm run prisma:deploy
+npm run prisma:seed
 ```
 
-It creates the complete demo/master/operational seed data, but only one
-account:
+Seed membuat satu tenant demo lengkap, dua cabang, plan/features, permission,
+lima role, lima akun, serta data master dan operasional untuk inventory, POS,
+purchasing, finance, CRM, compliance, dan HR.
+
+Tenant demo:
 
 ```text
-superadmin@apotek.local / Password123!
+Apotek MVP 1 Local
+- Cabang Utama
+- Gudang Pembantu
 ```
 
-The seed tenant and branch remain available so the FE can display inventory,
-sales, purchasing, finance, CRM, HR, and other modules immediately. New real
-tenants can still be created from the FE using `POST /api/v1/internal/tenants`.
-That endpoint can also create its first branch and owner in one request.
+Semua akun memakai password `Password123!`:
+
+```text
+superadmin@apotek.local  (SUPER_ADMIN)
+owner@apotek.local       (OWNER)
+admin@apotek.local       (ADMIN)
+apj@apotek.local         (APJ, PIN: 123456)
+cashier@apotek.local     (CASHIER)
+```
+
+Seed aman dijalankan ulang karena memakai upsert/`ON CONFLICT`. Data dengan ID
+seed diperbarui tanpa menghapus tenant atau data lain di database. New real
+tenants tetap dapat dibuat melalui `POST /api/v1/internal/tenants`.
 
 `seed.mvp1.sql` remains the legacy seed and still contains the original demo
-accounts. Use `seed.superadmin.sql` when only the superadmin account is wanted.
+account domain `@apotek-mvp1.local`. Gunakan `npm run prisma:seed` untuk data
+demo yang menjadi referensi FE saat ini.

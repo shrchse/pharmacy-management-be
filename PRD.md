@@ -173,6 +173,17 @@ Feature dan paket mengikuti `src/mocks/featureRegistry.ts`:
 
 ### 3. Master Data
 
+Arsitektur produk menggunakan dua lapisan agar master produk dapat dipakai lintas tenant tanpa mencampur data operasional:
+
+- `ProductCatalog` adalah master global platform untuk identitas produk umum: nama generik, komposisi, barcode, manufacturer, dan klasifikasi.
+- `TenantProduct` adalah mapping produk ke tenant/apotek. Tabel ini menyimpan harga jual, HPP, minimum stok, status aktif, policy resep, dan custom name tenant.
+- `ProductBatch` tetap menyimpan stok dan ED per tenant serta outlet/cabang.
+- Produk private label atau racikan yang tidak boleh dibagi dapat dibuat sebagai produk lokal tenant.
+
+Harga, HPP, supplier, stok, batch, rak, dan status penjualan tidak boleh dibaca langsung dari `ProductCatalog`.
+
+Selama MVP1, `Product` lama dipertahankan sebagai compatibility projection agar POS, pembelian, inventory, dan resep tetap stabil. Produk tersebut ditautkan ke `ProductCatalog` melalui `catalogId` dan mapping `TenantProduct`; migrasi foreign key operasional penuh ke `TenantProduct` dilakukan setelah kontrak FE stabil.
+
 Endpoint CRUD:
 
 | Resource | Endpoint |
@@ -186,6 +197,8 @@ Endpoint CRUD:
 | Dokter | `/doctors` |
 | User tenant | `/users` |
 | Outlet | `/outlets` |
+| Katalog produk global | `/product-catalog` |
+| Produk tenant/assortment | `/tenant-products` |
 
 Requirement khusus produk:
 
@@ -376,7 +389,7 @@ Model harus dibuat setara dengan tipe FE:
 - `User`, `Role`, `Permission`, `SupervisorAction`
 - `Tenant`, `Entitlement`, `Subscription`
 - `Outlet`, `BranchSummary`
-- `Product`, `Category`, `Satuan`, `Rak`
+- `ProductCatalog`, `TenantProduct`, `ProductUnit`, `Category`, `Satuan`, `Rak`
 - `Supplier`, `Customer`, `Doctor`
 - `Transaction`, `TransactionItem`, `PaymentMethod`, `TxnStatus`
 - `StockCardEntry`, `OpnameSession`, `OpnameItem`, `DefektaItem`, `InternalMutation`
@@ -399,6 +412,7 @@ Backend harus menyediakan OpenAPI schema yang bisa digunakan FE untuk generate t
 
 - Auth/session/RBAC.
 - Produk, kategori, satuan, rak.
+- Product catalog global dan mapping `TenantProduct` untuk apotek trial.
 - Supplier, pelanggan, dokter, outlet.
 - POS checkout atomik.
 - Transaksi dan receipt.
@@ -429,12 +443,13 @@ Backend harus menyediakan OpenAPI schema yang bisa digunakan FE untuk generate t
 
 1. FE bisa login, melihat menu sesuai role, dan logout via API.
 2. `productRepo.list()` dan repo CRUD inti bisa diarahkan ke API tanpa perubahan komponen page.
-3. Checkout POS menghasilkan transaksi, menurunkan stok, membuat stock card, dan menampilkan receipt.
-4. Pembayaran hutang/piutang mengubah status dan membuat cash ledger.
-5. Permission dan entitlement dicek di backend dan FE mendapat error `403` yang bisa dipetakan ke halaman forbidden/module locked.
-6. Semua write menghasilkan audit log.
-7. Seed demo tersedia untuk parity dengan data mock FE.
-8. Backend menyediakan health check dan OpenAPI docs.
+3. Produk global dapat diaktifkan pada tenant melalui `TenantProduct`, sementara harga, batch, dan stok tetap terisolasi per tenant/cabang.
+4. Checkout POS menghasilkan transaksi, menurunkan stok, membuat stock card, dan menampilkan receipt.
+5. Pembayaran hutang/piutang mengubah status dan membuat cash ledger.
+6. Permission dan entitlement dicek di backend dan FE mendapat error `403` yang bisa dipetakan ke halaman forbidden/module locked.
+7. Semua write menghasilkan audit log.
+8. Seed demo tersedia untuk parity dengan data mock FE.
+9. Backend menyediakan health check dan OpenAPI docs.
 
 ## Risiko dan Mitigasi
 

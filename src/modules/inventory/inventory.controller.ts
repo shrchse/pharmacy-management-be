@@ -13,6 +13,7 @@ const createBatchSchema = z.object({
   expiredDate: z.coerce.date(),
   buyPrice: z.coerce.number().nonnegative(),
   stock: z.number().int().min(0),
+  productUnitId: z.string().uuid().optional(),
   locationId: z.string().uuid().optional(),
   notes: z.string().optional(),
 });
@@ -168,6 +169,17 @@ export const createBatch = async (req: Request, res: Response, next: NextFunctio
     const branchId = getBranchId(req);
     const payload = createBatchSchema.parse(req.body);
     const batch = await prisma.$transaction(async (tx) => {
+      let baseStock = payload.stock;
+      let inputConversion = 1;
+      if (payload.productUnitId) {
+        const productUnit = await tx.productUnit.findFirst({
+          where: { id: payload.productUnitId, productId: payload.productId, product: { tenantId } },
+          include: { unit: true },
+        });
+        if (!productUnit) throw new HttpError('Product unit does not belong to product and tenant', 400, 'PRODUCT_UNIT_MISMATCH');
+        inputConversion = productUnit.conversion;
+        baseStock = payload.stock * inputConversion;
+      }
       const created = await tx.productBatch.create({
         data: {
           tenantId,
@@ -177,7 +189,7 @@ export const createBatch = async (req: Request, res: Response, next: NextFunctio
           batchNumber: payload.batchNumber,
           expiredDate: payload.expiredDate,
           buyPrice: money(payload.buyPrice),
-          stock: payload.stock,
+          stock: baseStock,
         },
       });
 
@@ -190,8 +202,8 @@ export const createBatch = async (req: Request, res: Response, next: NextFunctio
           locationId: payload.locationId,
           userId: req.auth?.userId,
           type: 'PURCHASE',
-          qtyChange: payload.stock,
-          finalStock: payload.stock,
+          qtyChange: baseStock,
+          finalStock: baseStock,
           refType: 'ProductBatch',
           refId: created.id,
           sourceDocumentNo: payload.batchNumber,
@@ -200,7 +212,7 @@ export const createBatch = async (req: Request, res: Response, next: NextFunctio
       });
 
       await auditLog({ tenantId, branchId, actorId: req.auth?.userId, action: 'CREATE', entity: 'ProductBatch', entityId: created.id, after: created, req }, tx);
-      return created;
+      return { ...created, inputStock: payload.stock, inputConversion };
     });
 
     return sendSuccess(res, batch, 'Product batch created', 201);

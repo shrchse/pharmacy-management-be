@@ -47,7 +47,21 @@ Run Database Migrations:
 npm run prisma:migrate
 ```
 
-### 4. Running the Development Server
+### 4. Seed Demo Lengkap
+
+Setelah migration terpasang, isi tenant demo, dua cabang, lima role/akun, dan
+data operasional dengan:
+
+```bash
+npm run prisma:seed
+```
+
+Semua akun demo memakai password `Password123!`: `superadmin@apotek.local`,
+`owner@apotek.local`, `admin@apotek.local`, `apj@apotek.local`, dan
+`cashier@apotek.local`. PIN APJ adalah `123456`. Detail seed tersedia di
+[`prisma/README.md`](prisma/README.md).
+
+### 5. Running the Development Server
 
 ```bash
 npm run dev
@@ -84,4 +98,4 @@ pharmacy-management-be/
 └── tsconfig.json
 ```
 
-codex resume 01a012ad-d2e9-7a10-97b8-d272cbd0874f
+codex resume 01a04b5c-4237-7e42-bce6-0a6821ef888e

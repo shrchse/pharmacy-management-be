@@ -20,6 +20,11 @@ enum SubscriptionStatus {
   SUSPENDED
 }
 
+enum SubscriptionBillingCycle {
+  MONTHLY
+  YEARLY
+}
+
 enum BranchStatus {
   ACTIVE
   INACTIVE
@@ -72,6 +77,8 @@ model Tenant {
   currency String  @default("IDR")
 
   subscriptionStatus SubscriptionStatus @default(TRIAL)
+  subscriptionStartedAt DateTime?
+  subscriptionBillingCycle SubscriptionBillingCycle?
   trialEndsAt        DateTime?
   subscriptionEndsAt DateTime?
   isDemo             Boolean            @default(false)
@@ -93,6 +100,7 @@ model Tenant {
   chartOfAccounts          ChartOfAccount[]
   journalEntries           JournalEntry[]
   stockLedgers             StockLedger[]
+  tenantProducts           TenantProduct[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -422,6 +430,20 @@ model Category {
   @@unique([tenantId, name, type])
 }
 
+model CategoryCatalog {
+  id          String       @id @default(uuid())
+  code        String       @unique
+  name        String
+  type        CategoryType @default(OBAT_BEBAS)
+  description String?
+  isActive    Boolean      @default(true)
+
+  productCatalogs ProductCatalog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Unit {
   id       String @id @default(uuid())
   tenantId String
@@ -438,10 +460,57 @@ model Unit {
   @@unique([tenantId, name])
 }
 
+model UnitCatalog {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  productCatalogs ProductCatalog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductCatalog {
+  id                   String              @id @default(uuid())
+  globalCode           String              @unique
+  barcode              String?
+  name                 String
+  genericName          String?
+  brandName            String?
+  registrationNumber   String?
+  dosageForm           String?
+  strength             String?
+  composition          String?
+  manufacturer         String?
+  principal            String?
+  productType          ProductType         @default(MEDICINE)
+  controlledClass      ControlledDrugClass @default(NONE)
+  categoryCatalogId    String?
+  categoryCatalog      CategoryCatalog?    @relation(fields: [categoryCatalogId], references: [id])
+  defaultUnitCatalogId String?
+  defaultUnitCatalog   UnitCatalog?        @relation(fields: [defaultUnitCatalogId], references: [id])
+  isActive             Boolean             @default(true)
+
+  products       Product[]
+  tenantProducts TenantProduct[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([barcode])
+  @@index([name])
+  @@index([genericName])
+}
+
 model Product {
-  id       String @id @default(uuid())
-  tenantId String
-  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id        String          @id @default(uuid())
+  tenantId  String
+  tenant    Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  catalogId String?
+  catalog   ProductCatalog? @relation(fields: [catalogId], references: [id])
 
   categoryId String
   category   Category @relation(fields: [categoryId], references: [id])
@@ -477,6 +546,7 @@ model Product {
   supplierPrices    SupplierProductPrice[]
   consignmentItems  ConsignmentItem[]
   purchasePlanItems PurchasePlanItem[]
+  tenantProduct     TenantProduct?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -485,6 +555,27 @@ model Product {
   @@index([tenantId, barcode])
   @@index([tenantId, name])
   @@index([tenantId, categoryId])
+}
+
+/// Compatibility mapping used while operational modules still reference Product.
+/// A future migration can move operational foreign keys from Product to TenantProduct.
+model TenantProduct {
+  id         String         @id @default(uuid())
+  tenantId   String
+  tenant     Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  catalogId  String
+  catalog    ProductCatalog @relation(fields: [catalogId], references: [id])
+  productId  String         @unique
+  product    Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  customName String?
+  minStock   Int?
+  isActive   Boolean        @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, catalogId])
+  @@index([tenantId, isActive])
 }
 
 model ProductUnit {
@@ -748,19 +839,19 @@ model CashierSession {
   cashierId String
   cashier   User   @relation(fields: [cashierId], references: [id])
 
-  openedAt     DateTime  @default(now())
-  closedAt     DateTime?
-  startingCash Decimal   @db.Decimal(12, 2)
-  expectedCash Decimal?  @db.Decimal(12, 2)
-  actualCash   Decimal?  @db.Decimal(12, 2)
-  difference   Decimal?  @db.Decimal(12, 2)
-  status       String    @default("OPEN")
-  depositAmount Decimal? @db.Decimal(12, 2)
-  depositedAt  DateTime?
-  verifiedById String?
-  verifiedAt   DateTime?
+  openedAt          DateTime  @default(now())
+  closedAt          DateTime?
+  startingCash      Decimal   @db.Decimal(12, 2)
+  expectedCash      Decimal?  @db.Decimal(12, 2)
+  actualCash        Decimal?  @db.Decimal(12, 2)
+  difference        Decimal?  @db.Decimal(12, 2)
+  status            String    @default("OPEN")
+  depositAmount     Decimal?  @db.Decimal(12, 2)
+  depositedAt       DateTime?
+  verifiedById      String?
+  verifiedAt        DateTime?
   verificationNotes String?
-  notes        String?
+  notes             String?
 
   sales Sale[]
 
@@ -1171,17 +1262,17 @@ model Purchase {
 }
 
 model PurchaseApproval {
-  id          String   @id @default(uuid())
-  tenantId    String
-  branchId    String
-  purchaseId  String
+  id            String    @id @default(uuid())
+  tenantId      String
+  branchId      String
+  purchaseId    String
   requestedById String
-  approverId  String?
-  status      String   @default("PENDING")
-  notes       String?
-  approvedAt  DateTime?
-  rejectedAt  DateTime?
-  createdAt   DateTime @default(now())
+  approverId    String?
+  status        String    @default("PENDING")
+  notes         String?
+  approvedAt    DateTime?
+  rejectedAt    DateTime?
+  createdAt     DateTime  @default(now())
 
   @@index([tenantId, branchId, purchaseId])
   @@index([tenantId, branchId, status])
@@ -1293,20 +1384,35 @@ model ConsignmentSettlement {
   @@unique([tenantId, settlementNo])
 }
 
+model LicenseType {
+  id          String  @id @default(uuid())
+  code        String  @unique
+  name        String
+  description String?
+  isActive    Boolean @default(true)
+
+  licenses License[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model License {
-  id          String   @id @default(uuid())
-  tenantId    String
-  branchId    String?
-  code        String
-  type        String
-  holderName  String?
-  number      String
-  issuedAt    DateTime?
-  expiredAt   DateTime
-  status      String   @default("ACTIVE")
-  notes       String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String       @id @default(uuid())
+  tenantId      String
+  branchId      String?
+  code          String
+  type          String
+  licenseTypeId String?
+  licenseType   LicenseType? @relation(fields: [licenseTypeId], references: [id])
+  holderName    String?
+  number        String
+  issuedAt      DateTime?
+  expiredAt     DateTime
+  status        String       @default("ACTIVE")
+  notes         String?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 
   @@unique([tenantId, code])
   @@index([tenantId, branchId, type, expiredAt])
@@ -1314,19 +1420,19 @@ model License {
 }
 
 model PractitionerLicense {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   tenantId         String
   branchId         String?
   practitionerName String
-  profession       String   @default("APOTEKER")
+  profession       String    @default("APOTEKER")
   licenseType      String
   number           String
   issuedAt         DateTime?
   expiredAt        DateTime
-  status           String   @default("ACTIVE")
+  status           String    @default("ACTIVE")
   notes            String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   @@unique([tenantId, number])
   @@index([tenantId, branchId, licenseType, expiredAt])

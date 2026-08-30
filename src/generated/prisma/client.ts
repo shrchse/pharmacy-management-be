@@ -105,15 +105,36 @@ export type IdempotencyKey = Prisma.IdempotencyKeyModel
  */
 export type Category = Prisma.CategoryModel
 /**
+ * Model CategoryCatalog
+ * 
+ */
+export type CategoryCatalog = Prisma.CategoryCatalogModel
+/**
  * Model Unit
  * 
  */
 export type Unit = Prisma.UnitModel
 /**
+ * Model UnitCatalog
+ * 
+ */
+export type UnitCatalog = Prisma.UnitCatalogModel
+/**
+ * Model ProductCatalog
+ * 
+ */
+export type ProductCatalog = Prisma.ProductCatalogModel
+/**
  * Model Product
  * 
  */
 export type Product = Prisma.ProductModel
+/**
+ * Model TenantProduct
+ * Compatibility mapping used while operational modules still reference Product.
+ * A future migration can move operational foreign keys from Product to TenantProduct.
+ */
+export type TenantProduct = Prisma.TenantProductModel
 /**
  * Model ProductUnit
  * 
@@ -284,6 +305,11 @@ export type ConsignmentItem = Prisma.ConsignmentItemModel
  * 
  */
 export type ConsignmentSettlement = Prisma.ConsignmentSettlementModel
+/**
+ * Model LicenseType
+ * 
+ */
+export type LicenseType = Prisma.LicenseTypeModel
 /**
  * Model License
  * 

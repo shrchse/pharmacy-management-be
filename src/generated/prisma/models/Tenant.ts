@@ -36,6 +36,8 @@ export type TenantMinAggregateOutputType = {
   timezone: string | null
   currency: string | null
   subscriptionStatus: $Enums.SubscriptionStatus | null
+  subscriptionStartedAt: Date | null
+  subscriptionBillingCycle: $Enums.SubscriptionBillingCycle | null
   trialEndsAt: Date | null
   subscriptionEndsAt: Date | null
   isDemo: boolean | null
@@ -55,6 +57,8 @@ export type TenantMaxAggregateOutputType = {
   timezone: string | null
   currency: string | null
   subscriptionStatus: $Enums.SubscriptionStatus | null
+  subscriptionStartedAt: Date | null
+  subscriptionBillingCycle: $Enums.SubscriptionBillingCycle | null
   trialEndsAt: Date | null
   subscriptionEndsAt: Date | null
   isDemo: boolean | null
@@ -74,6 +78,8 @@ export type TenantCountAggregateOutputType = {
   timezone: number
   currency: number
   subscriptionStatus: number
+  subscriptionStartedAt: number
+  subscriptionBillingCycle: number
   trialEndsAt: number
   subscriptionEndsAt: number
   isDemo: number
@@ -95,6 +101,8 @@ export type TenantMinAggregateInputType = {
   timezone?: true
   currency?: true
   subscriptionStatus?: true
+  subscriptionStartedAt?: true
+  subscriptionBillingCycle?: true
   trialEndsAt?: true
   subscriptionEndsAt?: true
   isDemo?: true
@@ -114,6 +122,8 @@ export type TenantMaxAggregateInputType = {
   timezone?: true
   currency?: true
   subscriptionStatus?: true
+  subscriptionStartedAt?: true
+  subscriptionBillingCycle?: true
   trialEndsAt?: true
   subscriptionEndsAt?: true
   isDemo?: true
@@ -133,6 +143,8 @@ export type TenantCountAggregateInputType = {
   timezone?: true
   currency?: true
   subscriptionStatus?: true
+  subscriptionStartedAt?: true
+  subscriptionBillingCycle?: true
   trialEndsAt?: true
   subscriptionEndsAt?: true
   isDemo?: true
@@ -225,6 +237,8 @@ export type TenantGroupByOutputType = {
   timezone: string
   currency: string
   subscriptionStatus: $Enums.SubscriptionStatus
+  subscriptionStartedAt: Date | null
+  subscriptionBillingCycle: $Enums.SubscriptionBillingCycle | null
   trialEndsAt: Date | null
   subscriptionEndsAt: Date | null
   isDemo: boolean
@@ -265,6 +279,8 @@ export type TenantWhereInput = {
   timezone?: Prisma.StringFilter<"Tenant"> | string
   currency?: Prisma.StringFilter<"Tenant"> | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFilter<"Tenant"> | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.DateTimeNullableFilter<"Tenant"> | Date | string | null
+  subscriptionBillingCycle?: Prisma.EnumSubscriptionBillingCycleNullableFilter<"Tenant"> | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.DateTimeNullableFilter<"Tenant"> | Date | string | null
   subscriptionEndsAt?: Prisma.DateTimeNullableFilter<"Tenant"> | Date | string | null
   isDemo?: Prisma.BoolFilter<"Tenant"> | boolean
@@ -288,6 +304,7 @@ export type TenantWhereInput = {
   chartOfAccounts?: Prisma.ChartOfAccountListRelationFilter
   journalEntries?: Prisma.JournalEntryListRelationFilter
   stockLedgers?: Prisma.StockLedgerListRelationFilter
+  tenantProducts?: Prisma.TenantProductListRelationFilter
 }
 
 export type TenantOrderByWithRelationInput = {
@@ -302,6 +319,8 @@ export type TenantOrderByWithRelationInput = {
   timezone?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   subscriptionStatus?: Prisma.SortOrder
+  subscriptionStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  subscriptionBillingCycle?: Prisma.SortOrderInput | Prisma.SortOrder
   trialEndsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   subscriptionEndsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   isDemo?: Prisma.SortOrder
@@ -325,6 +344,7 @@ export type TenantOrderByWithRelationInput = {
   chartOfAccounts?: Prisma.ChartOfAccountOrderByRelationAggregateInput
   journalEntries?: Prisma.JournalEntryOrderByRelationAggregateInput
   stockLedgers?: Prisma.StockLedgerOrderByRelationAggregateInput
+  tenantProducts?: Prisma.TenantProductOrderByRelationAggregateInput
 }
 
 export type TenantWhereUniqueInput = Prisma.AtLeast<{
@@ -342,6 +362,8 @@ export type TenantWhereUniqueInput = Prisma.AtLeast<{
   timezone?: Prisma.StringFilter<"Tenant"> | string
   currency?: Prisma.StringFilter<"Tenant"> | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFilter<"Tenant"> | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.DateTimeNullableFilter<"Tenant"> | Date | string | null
+  subscriptionBillingCycle?: Prisma.EnumSubscriptionBillingCycleNullableFilter<"Tenant"> | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.DateTimeNullableFilter<"Tenant"> | Date | string | null
   subscriptionEndsAt?: Prisma.DateTimeNullableFilter<"Tenant"> | Date | string | null
   isDemo?: Prisma.BoolFilter<"Tenant"> | boolean
@@ -365,6 +387,7 @@ export type TenantWhereUniqueInput = Prisma.AtLeast<{
   chartOfAccounts?: Prisma.ChartOfAccountListRelationFilter
   journalEntries?: Prisma.JournalEntryListRelationFilter
   stockLedgers?: Prisma.StockLedgerListRelationFilter
+  tenantProducts?: Prisma.TenantProductListRelationFilter
 }, "id" | "slug" | "email">
 
 export type TenantOrderByWithAggregationInput = {
@@ -379,6 +402,8 @@ export type TenantOrderByWithAggregationInput = {
   timezone?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   subscriptionStatus?: Prisma.SortOrder
+  subscriptionStartedAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  subscriptionBillingCycle?: Prisma.SortOrderInput | Prisma.SortOrder
   trialEndsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   subscriptionEndsAt?: Prisma.SortOrderInput | Prisma.SortOrder
   isDemo?: Prisma.SortOrder
@@ -404,6 +429,8 @@ export type TenantScalarWhereWithAggregatesInput = {
   timezone?: Prisma.StringWithAggregatesFilter<"Tenant"> | string
   currency?: Prisma.StringWithAggregatesFilter<"Tenant"> | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusWithAggregatesFilter<"Tenant"> | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
+  subscriptionBillingCycle?: Prisma.EnumSubscriptionBillingCycleNullableWithAggregatesFilter<"Tenant"> | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
   subscriptionEndsAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Tenant"> | Date | string | null
   isDemo?: Prisma.BoolWithAggregatesFilter<"Tenant"> | boolean
@@ -422,6 +449,8 @@ export type TenantCreateInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -445,6 +474,7 @@ export type TenantCreateInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateInput = {
@@ -459,6 +489,8 @@ export type TenantUncheckedCreateInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -481,6 +513,7 @@ export type TenantUncheckedCreateInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUpdateInput = {
@@ -494,6 +527,8 @@ export type TenantUpdateInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -517,6 +552,7 @@ export type TenantUpdateInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateInput = {
@@ -531,6 +567,8 @@ export type TenantUncheckedUpdateInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -553,6 +591,7 @@ export type TenantUncheckedUpdateInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateManyInput = {
@@ -567,6 +606,8 @@ export type TenantCreateManyInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -585,6 +626,8 @@ export type TenantUpdateManyMutationInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -604,6 +647,8 @@ export type TenantUncheckedUpdateManyInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -633,6 +678,8 @@ export type TenantCountOrderByAggregateInput = {
   timezone?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   subscriptionStatus?: Prisma.SortOrder
+  subscriptionStartedAt?: Prisma.SortOrder
+  subscriptionBillingCycle?: Prisma.SortOrder
   trialEndsAt?: Prisma.SortOrder
   subscriptionEndsAt?: Prisma.SortOrder
   isDemo?: Prisma.SortOrder
@@ -652,6 +699,8 @@ export type TenantMaxOrderByAggregateInput = {
   timezone?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   subscriptionStatus?: Prisma.SortOrder
+  subscriptionStartedAt?: Prisma.SortOrder
+  subscriptionBillingCycle?: Prisma.SortOrder
   trialEndsAt?: Prisma.SortOrder
   subscriptionEndsAt?: Prisma.SortOrder
   isDemo?: Prisma.SortOrder
@@ -671,6 +720,8 @@ export type TenantMinOrderByAggregateInput = {
   timezone?: Prisma.SortOrder
   currency?: Prisma.SortOrder
   subscriptionStatus?: Prisma.SortOrder
+  subscriptionStartedAt?: Prisma.SortOrder
+  subscriptionBillingCycle?: Prisma.SortOrder
   trialEndsAt?: Prisma.SortOrder
   subscriptionEndsAt?: Prisma.SortOrder
   isDemo?: Prisma.SortOrder
@@ -736,6 +787,10 @@ export type EnumSubscriptionStatusFieldUpdateOperationsInput = {
 
 export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
+}
+
+export type NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput = {
+  set?: $Enums.SubscriptionBillingCycle | null
 }
 
 export type TenantCreateNestedOneWithoutFeaturesInput = {
@@ -880,6 +935,20 @@ export type TenantUpdateOneRequiredWithoutProductsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.TenantUpdateToOneWithWhereWithoutProductsInput, Prisma.TenantUpdateWithoutProductsInput>, Prisma.TenantUncheckedUpdateWithoutProductsInput>
 }
 
+export type TenantCreateNestedOneWithoutTenantProductsInput = {
+  create?: Prisma.XOR<Prisma.TenantCreateWithoutTenantProductsInput, Prisma.TenantUncheckedCreateWithoutTenantProductsInput>
+  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutTenantProductsInput
+  connect?: Prisma.TenantWhereUniqueInput
+}
+
+export type TenantUpdateOneRequiredWithoutTenantProductsNestedInput = {
+  create?: Prisma.XOR<Prisma.TenantCreateWithoutTenantProductsInput, Prisma.TenantUncheckedCreateWithoutTenantProductsInput>
+  connectOrCreate?: Prisma.TenantCreateOrConnectWithoutTenantProductsInput
+  upsert?: Prisma.TenantUpsertWithoutTenantProductsInput
+  connect?: Prisma.TenantWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.TenantUpdateToOneWithWhereWithoutTenantProductsInput, Prisma.TenantUpdateWithoutTenantProductsInput>, Prisma.TenantUncheckedUpdateWithoutTenantProductsInput>
+}
+
 export type TenantCreateNestedOneWithoutStockLedgersInput = {
   create?: Prisma.XOR<Prisma.TenantCreateWithoutStockLedgersInput, Prisma.TenantUncheckedCreateWithoutStockLedgersInput>
   connectOrCreate?: Prisma.TenantCreateOrConnectWithoutStockLedgersInput
@@ -989,6 +1058,8 @@ export type TenantCreateWithoutPlanInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1011,6 +1082,7 @@ export type TenantCreateWithoutPlanInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutPlanInput = {
@@ -1024,6 +1096,8 @@ export type TenantUncheckedCreateWithoutPlanInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1046,6 +1120,7 @@ export type TenantUncheckedCreateWithoutPlanInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutPlanInput = {
@@ -1089,6 +1164,8 @@ export type TenantScalarWhereInput = {
   timezone?: Prisma.StringFilter<"Tenant"> | string
   currency?: Prisma.StringFilter<"Tenant"> | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFilter<"Tenant"> | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.DateTimeNullableFilter<"Tenant"> | Date | string | null
+  subscriptionBillingCycle?: Prisma.EnumSubscriptionBillingCycleNullableFilter<"Tenant"> | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.DateTimeNullableFilter<"Tenant"> | Date | string | null
   subscriptionEndsAt?: Prisma.DateTimeNullableFilter<"Tenant"> | Date | string | null
   isDemo?: Prisma.BoolFilter<"Tenant"> | boolean
@@ -1107,6 +1184,8 @@ export type TenantCreateWithoutFeaturesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1129,6 +1208,7 @@ export type TenantCreateWithoutFeaturesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutFeaturesInput = {
@@ -1143,6 +1223,8 @@ export type TenantUncheckedCreateWithoutFeaturesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1164,6 +1246,7 @@ export type TenantUncheckedCreateWithoutFeaturesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutFeaturesInput = {
@@ -1193,6 +1276,8 @@ export type TenantUpdateWithoutFeaturesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1215,6 +1300,7 @@ export type TenantUpdateWithoutFeaturesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutFeaturesInput = {
@@ -1229,6 +1315,8 @@ export type TenantUncheckedUpdateWithoutFeaturesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1250,6 +1338,7 @@ export type TenantUncheckedUpdateWithoutFeaturesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutPoliciesInput = {
@@ -1263,6 +1352,8 @@ export type TenantCreateWithoutPoliciesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1285,6 +1376,7 @@ export type TenantCreateWithoutPoliciesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutPoliciesInput = {
@@ -1299,6 +1391,8 @@ export type TenantUncheckedCreateWithoutPoliciesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1320,6 +1414,7 @@ export type TenantUncheckedCreateWithoutPoliciesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutPoliciesInput = {
@@ -1349,6 +1444,8 @@ export type TenantUpdateWithoutPoliciesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1371,6 +1468,7 @@ export type TenantUpdateWithoutPoliciesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutPoliciesInput = {
@@ -1385,6 +1483,8 @@ export type TenantUncheckedUpdateWithoutPoliciesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1406,6 +1506,7 @@ export type TenantUncheckedUpdateWithoutPoliciesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutBranchesInput = {
@@ -1419,6 +1520,8 @@ export type TenantCreateWithoutBranchesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1441,6 +1544,7 @@ export type TenantCreateWithoutBranchesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutBranchesInput = {
@@ -1455,6 +1559,8 @@ export type TenantUncheckedCreateWithoutBranchesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1476,6 +1582,7 @@ export type TenantUncheckedCreateWithoutBranchesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutBranchesInput = {
@@ -1505,6 +1612,8 @@ export type TenantUpdateWithoutBranchesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1527,6 +1636,7 @@ export type TenantUpdateWithoutBranchesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutBranchesInput = {
@@ -1541,6 +1651,8 @@ export type TenantUncheckedUpdateWithoutBranchesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1562,6 +1674,7 @@ export type TenantUncheckedUpdateWithoutBranchesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutUsersInput = {
@@ -1575,6 +1688,8 @@ export type TenantCreateWithoutUsersInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1597,6 +1712,7 @@ export type TenantCreateWithoutUsersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutUsersInput = {
@@ -1611,6 +1727,8 @@ export type TenantUncheckedCreateWithoutUsersInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1632,6 +1750,7 @@ export type TenantUncheckedCreateWithoutUsersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutUsersInput = {
@@ -1661,6 +1780,8 @@ export type TenantUpdateWithoutUsersInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1683,6 +1804,7 @@ export type TenantUpdateWithoutUsersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutUsersInput = {
@@ -1697,6 +1819,8 @@ export type TenantUncheckedUpdateWithoutUsersInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1718,6 +1842,7 @@ export type TenantUncheckedUpdateWithoutUsersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutRolesInput = {
@@ -1731,6 +1856,8 @@ export type TenantCreateWithoutRolesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1753,6 +1880,7 @@ export type TenantCreateWithoutRolesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutRolesInput = {
@@ -1767,6 +1895,8 @@ export type TenantUncheckedCreateWithoutRolesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1788,6 +1918,7 @@ export type TenantUncheckedCreateWithoutRolesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutRolesInput = {
@@ -1817,6 +1948,8 @@ export type TenantUpdateWithoutRolesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1839,6 +1972,7 @@ export type TenantUpdateWithoutRolesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutRolesInput = {
@@ -1853,6 +1987,8 @@ export type TenantUncheckedUpdateWithoutRolesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1874,6 +2010,7 @@ export type TenantUncheckedUpdateWithoutRolesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutAuditLogsInput = {
@@ -1887,6 +2024,8 @@ export type TenantCreateWithoutAuditLogsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1909,6 +2048,7 @@ export type TenantCreateWithoutAuditLogsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutAuditLogsInput = {
@@ -1923,6 +2063,8 @@ export type TenantUncheckedCreateWithoutAuditLogsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -1944,6 +2086,7 @@ export type TenantUncheckedCreateWithoutAuditLogsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutAuditLogsInput = {
@@ -1973,6 +2116,8 @@ export type TenantUpdateWithoutAuditLogsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1995,6 +2140,7 @@ export type TenantUpdateWithoutAuditLogsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutAuditLogsInput = {
@@ -2009,6 +2155,8 @@ export type TenantUncheckedUpdateWithoutAuditLogsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2030,6 +2178,7 @@ export type TenantUncheckedUpdateWithoutAuditLogsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutSupervisorAuthorizationsInput = {
@@ -2043,6 +2192,8 @@ export type TenantCreateWithoutSupervisorAuthorizationsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2065,6 +2216,7 @@ export type TenantCreateWithoutSupervisorAuthorizationsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutSupervisorAuthorizationsInput = {
@@ -2079,6 +2231,8 @@ export type TenantUncheckedCreateWithoutSupervisorAuthorizationsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2100,6 +2254,7 @@ export type TenantUncheckedCreateWithoutSupervisorAuthorizationsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutSupervisorAuthorizationsInput = {
@@ -2129,6 +2284,8 @@ export type TenantUpdateWithoutSupervisorAuthorizationsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2151,6 +2308,7 @@ export type TenantUpdateWithoutSupervisorAuthorizationsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutSupervisorAuthorizationsInput = {
@@ -2165,6 +2323,8 @@ export type TenantUncheckedUpdateWithoutSupervisorAuthorizationsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2186,6 +2346,7 @@ export type TenantUncheckedUpdateWithoutSupervisorAuthorizationsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutCategoriesInput = {
@@ -2199,6 +2360,8 @@ export type TenantCreateWithoutCategoriesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2221,6 +2384,7 @@ export type TenantCreateWithoutCategoriesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutCategoriesInput = {
@@ -2235,6 +2399,8 @@ export type TenantUncheckedCreateWithoutCategoriesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2256,6 +2422,7 @@ export type TenantUncheckedCreateWithoutCategoriesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutCategoriesInput = {
@@ -2285,6 +2452,8 @@ export type TenantUpdateWithoutCategoriesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2307,6 +2476,7 @@ export type TenantUpdateWithoutCategoriesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutCategoriesInput = {
@@ -2321,6 +2491,8 @@ export type TenantUncheckedUpdateWithoutCategoriesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2342,6 +2514,7 @@ export type TenantUncheckedUpdateWithoutCategoriesInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutUnitsInput = {
@@ -2355,6 +2528,8 @@ export type TenantCreateWithoutUnitsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2377,6 +2552,7 @@ export type TenantCreateWithoutUnitsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutUnitsInput = {
@@ -2391,6 +2567,8 @@ export type TenantUncheckedCreateWithoutUnitsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2412,6 +2590,7 @@ export type TenantUncheckedCreateWithoutUnitsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutUnitsInput = {
@@ -2441,6 +2620,8 @@ export type TenantUpdateWithoutUnitsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2463,6 +2644,7 @@ export type TenantUpdateWithoutUnitsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutUnitsInput = {
@@ -2477,6 +2659,8 @@ export type TenantUncheckedUpdateWithoutUnitsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2498,6 +2682,7 @@ export type TenantUncheckedUpdateWithoutUnitsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutProductsInput = {
@@ -2511,6 +2696,8 @@ export type TenantCreateWithoutProductsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2533,6 +2720,7 @@ export type TenantCreateWithoutProductsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutProductsInput = {
@@ -2547,6 +2735,8 @@ export type TenantUncheckedCreateWithoutProductsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2568,6 +2758,7 @@ export type TenantUncheckedCreateWithoutProductsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutProductsInput = {
@@ -2597,6 +2788,8 @@ export type TenantUpdateWithoutProductsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2619,6 +2812,7 @@ export type TenantUpdateWithoutProductsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutProductsInput = {
@@ -2633,6 +2827,8 @@ export type TenantUncheckedUpdateWithoutProductsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2643,6 +2839,175 @@ export type TenantUncheckedUpdateWithoutProductsInput = {
   roles?: Prisma.RoleUncheckedUpdateManyWithoutTenantNestedInput
   categories?: Prisma.CategoryUncheckedUpdateManyWithoutTenantNestedInput
   units?: Prisma.UnitUncheckedUpdateManyWithoutTenantNestedInput
+  customers?: Prisma.CustomerUncheckedUpdateManyWithoutTenantNestedInput
+  doctors?: Prisma.DoctorUncheckedUpdateManyWithoutTenantNestedInput
+  suppliers?: Prisma.SupplierUncheckedUpdateManyWithoutTenantNestedInput
+  features?: Prisma.TenantFeatureUncheckedUpdateManyWithoutTenantNestedInput
+  policies?: Prisma.TenantPolicyUncheckedUpdateManyWithoutTenantNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutTenantNestedInput
+  supervisorAuthorizations?: Prisma.SupervisorAuthorizationUncheckedUpdateManyWithoutTenantNestedInput
+  cashAccounts?: Prisma.CashAccountUncheckedUpdateManyWithoutTenantNestedInput
+  chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
+  journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
+  stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
+}
+
+export type TenantCreateWithoutTenantProductsInput = {
+  id?: string
+  name: string
+  slug: string
+  email: string
+  phone?: string | null
+  address?: string | null
+  taxId?: string | null
+  timezone?: string
+  currency?: string
+  subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
+  trialEndsAt?: Date | string | null
+  subscriptionEndsAt?: Date | string | null
+  isDemo?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  plan?: Prisma.PlanCreateNestedOneWithoutTenantsInput
+  branches?: Prisma.BranchCreateNestedManyWithoutTenantInput
+  users?: Prisma.UserCreateNestedManyWithoutTenantInput
+  roles?: Prisma.RoleCreateNestedManyWithoutTenantInput
+  categories?: Prisma.CategoryCreateNestedManyWithoutTenantInput
+  units?: Prisma.UnitCreateNestedManyWithoutTenantInput
+  products?: Prisma.ProductCreateNestedManyWithoutTenantInput
+  customers?: Prisma.CustomerCreateNestedManyWithoutTenantInput
+  doctors?: Prisma.DoctorCreateNestedManyWithoutTenantInput
+  suppliers?: Prisma.SupplierCreateNestedManyWithoutTenantInput
+  features?: Prisma.TenantFeatureCreateNestedManyWithoutTenantInput
+  policies?: Prisma.TenantPolicyCreateNestedManyWithoutTenantInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutTenantInput
+  supervisorAuthorizations?: Prisma.SupervisorAuthorizationCreateNestedManyWithoutTenantInput
+  cashAccounts?: Prisma.CashAccountCreateNestedManyWithoutTenantInput
+  chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
+  journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
+  stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+}
+
+export type TenantUncheckedCreateWithoutTenantProductsInput = {
+  id?: string
+  planId?: string | null
+  name: string
+  slug: string
+  email: string
+  phone?: string | null
+  address?: string | null
+  taxId?: string | null
+  timezone?: string
+  currency?: string
+  subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
+  trialEndsAt?: Date | string | null
+  subscriptionEndsAt?: Date | string | null
+  isDemo?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  branches?: Prisma.BranchUncheckedCreateNestedManyWithoutTenantInput
+  users?: Prisma.UserUncheckedCreateNestedManyWithoutTenantInput
+  roles?: Prisma.RoleUncheckedCreateNestedManyWithoutTenantInput
+  categories?: Prisma.CategoryUncheckedCreateNestedManyWithoutTenantInput
+  units?: Prisma.UnitUncheckedCreateNestedManyWithoutTenantInput
+  products?: Prisma.ProductUncheckedCreateNestedManyWithoutTenantInput
+  customers?: Prisma.CustomerUncheckedCreateNestedManyWithoutTenantInput
+  doctors?: Prisma.DoctorUncheckedCreateNestedManyWithoutTenantInput
+  suppliers?: Prisma.SupplierUncheckedCreateNestedManyWithoutTenantInput
+  features?: Prisma.TenantFeatureUncheckedCreateNestedManyWithoutTenantInput
+  policies?: Prisma.TenantPolicyUncheckedCreateNestedManyWithoutTenantInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutTenantInput
+  supervisorAuthorizations?: Prisma.SupervisorAuthorizationUncheckedCreateNestedManyWithoutTenantInput
+  cashAccounts?: Prisma.CashAccountUncheckedCreateNestedManyWithoutTenantInput
+  chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
+  journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
+  stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+}
+
+export type TenantCreateOrConnectWithoutTenantProductsInput = {
+  where: Prisma.TenantWhereUniqueInput
+  create: Prisma.XOR<Prisma.TenantCreateWithoutTenantProductsInput, Prisma.TenantUncheckedCreateWithoutTenantProductsInput>
+}
+
+export type TenantUpsertWithoutTenantProductsInput = {
+  update: Prisma.XOR<Prisma.TenantUpdateWithoutTenantProductsInput, Prisma.TenantUncheckedUpdateWithoutTenantProductsInput>
+  create: Prisma.XOR<Prisma.TenantCreateWithoutTenantProductsInput, Prisma.TenantUncheckedCreateWithoutTenantProductsInput>
+  where?: Prisma.TenantWhereInput
+}
+
+export type TenantUpdateToOneWithWhereWithoutTenantProductsInput = {
+  where?: Prisma.TenantWhereInput
+  data: Prisma.XOR<Prisma.TenantUpdateWithoutTenantProductsInput, Prisma.TenantUncheckedUpdateWithoutTenantProductsInput>
+}
+
+export type TenantUpdateWithoutTenantProductsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
+  trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  plan?: Prisma.PlanUpdateOneWithoutTenantsNestedInput
+  branches?: Prisma.BranchUpdateManyWithoutTenantNestedInput
+  users?: Prisma.UserUpdateManyWithoutTenantNestedInput
+  roles?: Prisma.RoleUpdateManyWithoutTenantNestedInput
+  categories?: Prisma.CategoryUpdateManyWithoutTenantNestedInput
+  units?: Prisma.UnitUpdateManyWithoutTenantNestedInput
+  products?: Prisma.ProductUpdateManyWithoutTenantNestedInput
+  customers?: Prisma.CustomerUpdateManyWithoutTenantNestedInput
+  doctors?: Prisma.DoctorUpdateManyWithoutTenantNestedInput
+  suppliers?: Prisma.SupplierUpdateManyWithoutTenantNestedInput
+  features?: Prisma.TenantFeatureUpdateManyWithoutTenantNestedInput
+  policies?: Prisma.TenantPolicyUpdateManyWithoutTenantNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutTenantNestedInput
+  supervisorAuthorizations?: Prisma.SupervisorAuthorizationUpdateManyWithoutTenantNestedInput
+  cashAccounts?: Prisma.CashAccountUpdateManyWithoutTenantNestedInput
+  chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
+  journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
+  stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+}
+
+export type TenantUncheckedUpdateWithoutTenantProductsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  planId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  address?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  taxId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  timezone?: Prisma.StringFieldUpdateOperationsInput | string
+  currency?: Prisma.StringFieldUpdateOperationsInput | string
+  subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
+  trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  branches?: Prisma.BranchUncheckedUpdateManyWithoutTenantNestedInput
+  users?: Prisma.UserUncheckedUpdateManyWithoutTenantNestedInput
+  roles?: Prisma.RoleUncheckedUpdateManyWithoutTenantNestedInput
+  categories?: Prisma.CategoryUncheckedUpdateManyWithoutTenantNestedInput
+  units?: Prisma.UnitUncheckedUpdateManyWithoutTenantNestedInput
+  products?: Prisma.ProductUncheckedUpdateManyWithoutTenantNestedInput
   customers?: Prisma.CustomerUncheckedUpdateManyWithoutTenantNestedInput
   doctors?: Prisma.DoctorUncheckedUpdateManyWithoutTenantNestedInput
   suppliers?: Prisma.SupplierUncheckedUpdateManyWithoutTenantNestedInput
@@ -2667,6 +3032,8 @@ export type TenantCreateWithoutStockLedgersInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2689,6 +3056,7 @@ export type TenantCreateWithoutStockLedgersInput = {
   cashAccounts?: Prisma.CashAccountCreateNestedManyWithoutTenantInput
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutStockLedgersInput = {
@@ -2703,6 +3071,8 @@ export type TenantUncheckedCreateWithoutStockLedgersInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2724,6 +3094,7 @@ export type TenantUncheckedCreateWithoutStockLedgersInput = {
   cashAccounts?: Prisma.CashAccountUncheckedCreateNestedManyWithoutTenantInput
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutStockLedgersInput = {
@@ -2753,6 +3124,8 @@ export type TenantUpdateWithoutStockLedgersInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2775,6 +3148,7 @@ export type TenantUpdateWithoutStockLedgersInput = {
   cashAccounts?: Prisma.CashAccountUpdateManyWithoutTenantNestedInput
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutStockLedgersInput = {
@@ -2789,6 +3163,8 @@ export type TenantUncheckedUpdateWithoutStockLedgersInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2810,6 +3186,7 @@ export type TenantUncheckedUpdateWithoutStockLedgersInput = {
   cashAccounts?: Prisma.CashAccountUncheckedUpdateManyWithoutTenantNestedInput
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutCustomersInput = {
@@ -2823,6 +3200,8 @@ export type TenantCreateWithoutCustomersInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2845,6 +3224,7 @@ export type TenantCreateWithoutCustomersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutCustomersInput = {
@@ -2859,6 +3239,8 @@ export type TenantUncheckedCreateWithoutCustomersInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -2880,6 +3262,7 @@ export type TenantUncheckedCreateWithoutCustomersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutCustomersInput = {
@@ -2909,6 +3292,8 @@ export type TenantUpdateWithoutCustomersInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2931,6 +3316,7 @@ export type TenantUpdateWithoutCustomersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutCustomersInput = {
@@ -2945,6 +3331,8 @@ export type TenantUncheckedUpdateWithoutCustomersInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -2966,6 +3354,7 @@ export type TenantUncheckedUpdateWithoutCustomersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutDoctorsInput = {
@@ -2979,6 +3368,8 @@ export type TenantCreateWithoutDoctorsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3001,6 +3392,7 @@ export type TenantCreateWithoutDoctorsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutDoctorsInput = {
@@ -3015,6 +3407,8 @@ export type TenantUncheckedCreateWithoutDoctorsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3036,6 +3430,7 @@ export type TenantUncheckedCreateWithoutDoctorsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutDoctorsInput = {
@@ -3065,6 +3460,8 @@ export type TenantUpdateWithoutDoctorsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3087,6 +3484,7 @@ export type TenantUpdateWithoutDoctorsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutDoctorsInput = {
@@ -3101,6 +3499,8 @@ export type TenantUncheckedUpdateWithoutDoctorsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3122,6 +3522,7 @@ export type TenantUncheckedUpdateWithoutDoctorsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutSuppliersInput = {
@@ -3135,6 +3536,8 @@ export type TenantCreateWithoutSuppliersInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3157,6 +3560,7 @@ export type TenantCreateWithoutSuppliersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutSuppliersInput = {
@@ -3171,6 +3575,8 @@ export type TenantUncheckedCreateWithoutSuppliersInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3192,6 +3598,7 @@ export type TenantUncheckedCreateWithoutSuppliersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutSuppliersInput = {
@@ -3221,6 +3628,8 @@ export type TenantUpdateWithoutSuppliersInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3243,6 +3652,7 @@ export type TenantUpdateWithoutSuppliersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutSuppliersInput = {
@@ -3257,6 +3667,8 @@ export type TenantUncheckedUpdateWithoutSuppliersInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3278,6 +3690,7 @@ export type TenantUncheckedUpdateWithoutSuppliersInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutCashAccountsInput = {
@@ -3291,6 +3704,8 @@ export type TenantCreateWithoutCashAccountsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3313,6 +3728,7 @@ export type TenantCreateWithoutCashAccountsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutCashAccountsInput = {
@@ -3327,6 +3743,8 @@ export type TenantUncheckedCreateWithoutCashAccountsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3348,6 +3766,7 @@ export type TenantUncheckedCreateWithoutCashAccountsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutCashAccountsInput = {
@@ -3377,6 +3796,8 @@ export type TenantUpdateWithoutCashAccountsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3399,6 +3820,7 @@ export type TenantUpdateWithoutCashAccountsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutCashAccountsInput = {
@@ -3413,6 +3835,8 @@ export type TenantUncheckedUpdateWithoutCashAccountsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3434,6 +3858,7 @@ export type TenantUncheckedUpdateWithoutCashAccountsInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutChartOfAccountsInput = {
@@ -3447,6 +3872,8 @@ export type TenantCreateWithoutChartOfAccountsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3469,6 +3896,7 @@ export type TenantCreateWithoutChartOfAccountsInput = {
   cashAccounts?: Prisma.CashAccountCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutChartOfAccountsInput = {
@@ -3483,6 +3911,8 @@ export type TenantUncheckedCreateWithoutChartOfAccountsInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3504,6 +3934,7 @@ export type TenantUncheckedCreateWithoutChartOfAccountsInput = {
   cashAccounts?: Prisma.CashAccountUncheckedCreateNestedManyWithoutTenantInput
   journalEntries?: Prisma.JournalEntryUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutChartOfAccountsInput = {
@@ -3533,6 +3964,8 @@ export type TenantUpdateWithoutChartOfAccountsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3555,6 +3988,7 @@ export type TenantUpdateWithoutChartOfAccountsInput = {
   cashAccounts?: Prisma.CashAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutChartOfAccountsInput = {
@@ -3569,6 +4003,8 @@ export type TenantUncheckedUpdateWithoutChartOfAccountsInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3590,6 +4026,7 @@ export type TenantUncheckedUpdateWithoutChartOfAccountsInput = {
   cashAccounts?: Prisma.CashAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateWithoutJournalEntriesInput = {
@@ -3603,6 +4040,8 @@ export type TenantCreateWithoutJournalEntriesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3625,6 +4064,7 @@ export type TenantCreateWithoutJournalEntriesInput = {
   cashAccounts?: Prisma.CashAccountCreateNestedManyWithoutTenantInput
   chartOfAccounts?: Prisma.ChartOfAccountCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductCreateNestedManyWithoutTenantInput
 }
 
 export type TenantUncheckedCreateWithoutJournalEntriesInput = {
@@ -3639,6 +4079,8 @@ export type TenantUncheckedCreateWithoutJournalEntriesInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3660,6 +4102,7 @@ export type TenantUncheckedCreateWithoutJournalEntriesInput = {
   cashAccounts?: Prisma.CashAccountUncheckedCreateNestedManyWithoutTenantInput
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedCreateNestedManyWithoutTenantInput
   stockLedgers?: Prisma.StockLedgerUncheckedCreateNestedManyWithoutTenantInput
+  tenantProducts?: Prisma.TenantProductUncheckedCreateNestedManyWithoutTenantInput
 }
 
 export type TenantCreateOrConnectWithoutJournalEntriesInput = {
@@ -3689,6 +4132,8 @@ export type TenantUpdateWithoutJournalEntriesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3711,6 +4156,7 @@ export type TenantUpdateWithoutJournalEntriesInput = {
   cashAccounts?: Prisma.CashAccountUpdateManyWithoutTenantNestedInput
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutJournalEntriesInput = {
@@ -3725,6 +4171,8 @@ export type TenantUncheckedUpdateWithoutJournalEntriesInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3746,6 +4194,7 @@ export type TenantUncheckedUpdateWithoutJournalEntriesInput = {
   cashAccounts?: Prisma.CashAccountUncheckedUpdateManyWithoutTenantNestedInput
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantCreateManyPlanInput = {
@@ -3759,6 +4208,8 @@ export type TenantCreateManyPlanInput = {
   timezone?: string
   currency?: string
   subscriptionStatus?: $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Date | string | null
+  subscriptionBillingCycle?: $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Date | string | null
   subscriptionEndsAt?: Date | string | null
   isDemo?: boolean
@@ -3777,6 +4228,8 @@ export type TenantUpdateWithoutPlanInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3799,6 +4252,7 @@ export type TenantUpdateWithoutPlanInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateWithoutPlanInput = {
@@ -3812,6 +4266,8 @@ export type TenantUncheckedUpdateWithoutPlanInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3834,6 +4290,7 @@ export type TenantUncheckedUpdateWithoutPlanInput = {
   chartOfAccounts?: Prisma.ChartOfAccountUncheckedUpdateManyWithoutTenantNestedInput
   journalEntries?: Prisma.JournalEntryUncheckedUpdateManyWithoutTenantNestedInput
   stockLedgers?: Prisma.StockLedgerUncheckedUpdateManyWithoutTenantNestedInput
+  tenantProducts?: Prisma.TenantProductUncheckedUpdateManyWithoutTenantNestedInput
 }
 
 export type TenantUncheckedUpdateManyWithoutPlanInput = {
@@ -3847,6 +4304,8 @@ export type TenantUncheckedUpdateManyWithoutPlanInput = {
   timezone?: Prisma.StringFieldUpdateOperationsInput | string
   currency?: Prisma.StringFieldUpdateOperationsInput | string
   subscriptionStatus?: Prisma.EnumSubscriptionStatusFieldUpdateOperationsInput | $Enums.SubscriptionStatus
+  subscriptionStartedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subscriptionBillingCycle?: Prisma.NullableEnumSubscriptionBillingCycleFieldUpdateOperationsInput | $Enums.SubscriptionBillingCycle | null
   trialEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   subscriptionEndsAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   isDemo?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -3877,6 +4336,7 @@ export type TenantCountOutputType = {
   chartOfAccounts: number
   journalEntries: number
   stockLedgers: number
+  tenantProducts: number
 }
 
 export type TenantCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -3897,6 +4357,7 @@ export type TenantCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions
   chartOfAccounts?: boolean | TenantCountOutputTypeCountChartOfAccountsArgs
   journalEntries?: boolean | TenantCountOutputTypeCountJournalEntriesArgs
   stockLedgers?: boolean | TenantCountOutputTypeCountStockLedgersArgs
+  tenantProducts?: boolean | TenantCountOutputTypeCountTenantProductsArgs
 }
 
 /**
@@ -4028,6 +4489,13 @@ export type TenantCountOutputTypeCountStockLedgersArgs<ExtArgs extends runtime.T
   where?: Prisma.StockLedgerWhereInput
 }
 
+/**
+ * TenantCountOutputType without action
+ */
+export type TenantCountOutputTypeCountTenantProductsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.TenantProductWhereInput
+}
+
 
 export type TenantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -4041,6 +4509,8 @@ export type TenantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   timezone?: boolean
   currency?: boolean
   subscriptionStatus?: boolean
+  subscriptionStartedAt?: boolean
+  subscriptionBillingCycle?: boolean
   trialEndsAt?: boolean
   subscriptionEndsAt?: boolean
   isDemo?: boolean
@@ -4064,6 +4534,7 @@ export type TenantSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   chartOfAccounts?: boolean | Prisma.Tenant$chartOfAccountsArgs<ExtArgs>
   journalEntries?: boolean | Prisma.Tenant$journalEntriesArgs<ExtArgs>
   stockLedgers?: boolean | Prisma.Tenant$stockLedgersArgs<ExtArgs>
+  tenantProducts?: boolean | Prisma.Tenant$tenantProductsArgs<ExtArgs>
   _count?: boolean | Prisma.TenantCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["tenant"]>
 
@@ -4079,6 +4550,8 @@ export type TenantSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extens
   timezone?: boolean
   currency?: boolean
   subscriptionStatus?: boolean
+  subscriptionStartedAt?: boolean
+  subscriptionBillingCycle?: boolean
   trialEndsAt?: boolean
   subscriptionEndsAt?: boolean
   isDemo?: boolean
@@ -4099,6 +4572,8 @@ export type TenantSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extens
   timezone?: boolean
   currency?: boolean
   subscriptionStatus?: boolean
+  subscriptionStartedAt?: boolean
+  subscriptionBillingCycle?: boolean
   trialEndsAt?: boolean
   subscriptionEndsAt?: boolean
   isDemo?: boolean
@@ -4119,6 +4594,8 @@ export type TenantSelectScalar = {
   timezone?: boolean
   currency?: boolean
   subscriptionStatus?: boolean
+  subscriptionStartedAt?: boolean
+  subscriptionBillingCycle?: boolean
   trialEndsAt?: boolean
   subscriptionEndsAt?: boolean
   isDemo?: boolean
@@ -4126,7 +4603,7 @@ export type TenantSelectScalar = {
   updatedAt?: boolean
 }
 
-export type TenantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "planId" | "name" | "slug" | "email" | "phone" | "address" | "taxId" | "timezone" | "currency" | "subscriptionStatus" | "trialEndsAt" | "subscriptionEndsAt" | "isDemo" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
+export type TenantOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "planId" | "name" | "slug" | "email" | "phone" | "address" | "taxId" | "timezone" | "currency" | "subscriptionStatus" | "subscriptionStartedAt" | "subscriptionBillingCycle" | "trialEndsAt" | "subscriptionEndsAt" | "isDemo" | "createdAt" | "updatedAt", ExtArgs["result"]["tenant"]>
 export type TenantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   plan?: boolean | Prisma.Tenant$planArgs<ExtArgs>
   branches?: boolean | Prisma.Tenant$branchesArgs<ExtArgs>
@@ -4146,6 +4623,7 @@ export type TenantInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   chartOfAccounts?: boolean | Prisma.Tenant$chartOfAccountsArgs<ExtArgs>
   journalEntries?: boolean | Prisma.Tenant$journalEntriesArgs<ExtArgs>
   stockLedgers?: boolean | Prisma.Tenant$stockLedgersArgs<ExtArgs>
+  tenantProducts?: boolean | Prisma.Tenant$tenantProductsArgs<ExtArgs>
   _count?: boolean | Prisma.TenantCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type TenantIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -4176,6 +4654,7 @@ export type $TenantPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     chartOfAccounts: Prisma.$ChartOfAccountPayload<ExtArgs>[]
     journalEntries: Prisma.$JournalEntryPayload<ExtArgs>[]
     stockLedgers: Prisma.$StockLedgerPayload<ExtArgs>[]
+    tenantProducts: Prisma.$TenantProductPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -4189,6 +4668,8 @@ export type $TenantPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs
     timezone: string
     currency: string
     subscriptionStatus: $Enums.SubscriptionStatus
+    subscriptionStartedAt: Date | null
+    subscriptionBillingCycle: $Enums.SubscriptionBillingCycle | null
     trialEndsAt: Date | null
     subscriptionEndsAt: Date | null
     isDemo: boolean
@@ -4606,6 +5087,7 @@ export interface Prisma__TenantClient<T, Null = never, ExtArgs extends runtime.T
   chartOfAccounts<T extends Prisma.Tenant$chartOfAccountsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tenant$chartOfAccountsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ChartOfAccountPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   journalEntries<T extends Prisma.Tenant$journalEntriesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tenant$journalEntriesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$JournalEntryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   stockLedgers<T extends Prisma.Tenant$stockLedgersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tenant$stockLedgersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$StockLedgerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  tenantProducts<T extends Prisma.Tenant$tenantProductsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Tenant$tenantProductsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$TenantProductPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -4646,6 +5128,8 @@ export interface TenantFieldRefs {
   readonly timezone: Prisma.FieldRef<"Tenant", 'String'>
   readonly currency: Prisma.FieldRef<"Tenant", 'String'>
   readonly subscriptionStatus: Prisma.FieldRef<"Tenant", 'SubscriptionStatus'>
+  readonly subscriptionStartedAt: Prisma.FieldRef<"Tenant", 'DateTime'>
+  readonly subscriptionBillingCycle: Prisma.FieldRef<"Tenant", 'SubscriptionBillingCycle'>
   readonly trialEndsAt: Prisma.FieldRef<"Tenant", 'DateTime'>
   readonly subscriptionEndsAt: Prisma.FieldRef<"Tenant", 'DateTime'>
   readonly isDemo: Prisma.FieldRef<"Tenant", 'Boolean'>
@@ -5476,6 +5960,30 @@ export type Tenant$stockLedgersArgs<ExtArgs extends runtime.Types.Extensions.Int
   take?: number
   skip?: number
   distinct?: Prisma.StockLedgerScalarFieldEnum | Prisma.StockLedgerScalarFieldEnum[]
+}
+
+/**
+ * Tenant.tenantProducts
+ */
+export type Tenant$tenantProductsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the TenantProduct
+   */
+  select?: Prisma.TenantProductSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the TenantProduct
+   */
+  omit?: Prisma.TenantProductOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.TenantProductInclude<ExtArgs> | null
+  where?: Prisma.TenantProductWhereInput
+  orderBy?: Prisma.TenantProductOrderByWithRelationInput | Prisma.TenantProductOrderByWithRelationInput[]
+  cursor?: Prisma.TenantProductWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.TenantProductScalarFieldEnum | Prisma.TenantProductScalarFieldEnum[]
 }
 
 /**

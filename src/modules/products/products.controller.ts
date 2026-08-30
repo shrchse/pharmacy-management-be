@@ -11,6 +11,7 @@ const idParamSchema = z.object({
 });
 
 const productSchema = z.object({
+  catalogId: z.string().uuid().optional(),
   categoryId: z.string().uuid(),
   defaultSupplierId: z.string().uuid().optional(),
   code: z.string().min(1),
@@ -35,6 +36,16 @@ const productSchema = z.object({
   purchasePrice: z.coerce.number().nonnegative().optional(),
 });
 
+const productUnitSchema = z.object({
+  unitId: z.string().uuid(),
+  conversion: z.number().int().positive().default(1),
+  barcode: z.string().optional(),
+  sellingPrice: z.coerce.number().nonnegative(),
+  purchasePrice: z.coerce.number().nonnegative().optional(),
+  isBaseUnit: z.boolean().default(false),
+});
+const productUnitUpdateSchema = productUnitSchema.partial();
+
 const updateProductSchema = productSchema.omit({ unitId: true, conversion: true }).partial().extend({
   status: z.enum(['ACTIVE', 'INACTIVE', 'DISCONTINUED']).optional(),
   supervisorAuthorizationIds: z.array(z.string().uuid()).default([]),
@@ -45,6 +56,8 @@ const money = (value: number) => value.toFixed(2);
 const productInclude = {
   category: true,
   defaultSupplier: true,
+  catalog: true,
+  tenantProduct: { include: { catalog: true } },
   units: { include: { unit: true } },
 } as const;
 
@@ -114,10 +127,19 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
   try {
     const tenantId = getTenantId(req);
     const payload = productSchema.parse(req.body);
+    if (payload.conversion !== 1) {
+      throw new HttpError('Initial product unit must be the base unit with conversion 1; add strip/box as an additional unit', 400, 'BASE_UNIT_CONVERSION_REQUIRED');
+    }
     const product = await prisma.$transaction(async (tx) => {
+      const catalog = payload.catalogId
+        ? await tx.productCatalog.findFirst({ where: { id: payload.catalogId, isActive: true } })
+        : null;
+      if (payload.catalogId && !catalog) throw new HttpError('Active product catalog item not found', 404, 'CATALOG_ITEM_NOT_FOUND');
+
       const created = await tx.product.create({
         data: {
           tenantId,
+          catalogId: catalog?.id,
           categoryId: payload.categoryId,
           defaultSupplierId: payload.defaultSupplierId,
           code: payload.code,
@@ -145,6 +167,16 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
               purchasePrice: payload.purchasePrice === undefined ? undefined : money(payload.purchasePrice),
             },
           },
+          ...(catalog ? {
+            tenantProduct: {
+              create: {
+                tenantId,
+                catalogId: catalog.id,
+                minStock: payload.minStock,
+                isActive: true,
+              },
+            },
+          } : {}),
         },
         include: productInclude,
       });
@@ -159,6 +191,70 @@ export const createProduct = async (req: Request, res: Response, next: NextFunct
   }
 };
 
+export const addProductUnit = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const { id } = idParamSchema.parse(req.params);
+    const payload = productUnitSchema.parse(req.body);
+    if (payload.isBaseUnit && payload.conversion !== 1) {
+      throw new HttpError('Base unit must use conversion 1', 400, 'BASE_UNIT_CONVERSION_REQUIRED');
+    }
+
+    const unit = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.findFirst({ where: { id, tenantId } });
+      if (!product) throw new HttpError('Product not found', 404, 'PRODUCT_NOT_FOUND');
+      const tenantUnit = await tx.unit.findFirst({ where: { id: payload.unitId, tenantId } });
+      if (!tenantUnit) throw new HttpError('Unit not found for tenant', 404, 'UNIT_NOT_FOUND');
+      if (payload.isBaseUnit) {
+        const existingBase = await tx.productUnit.findFirst({ where: { productId: id, isBaseUnit: true } });
+        if (existingBase) throw new HttpError('Product already has a base unit', 409, 'BASE_UNIT_ALREADY_EXISTS');
+      }
+      const created = await tx.productUnit.create({
+        data: {
+          productId: id,
+          unitId: tenantUnit.id,
+          conversion: payload.conversion,
+          isBaseUnit: payload.isBaseUnit,
+          barcode: payload.barcode,
+          sellingPrice: money(payload.sellingPrice),
+          purchasePrice: payload.purchasePrice === undefined ? undefined : money(payload.purchasePrice),
+        },
+        include: { unit: true },
+      });
+      await auditLog({ tenantId, actorId: req.auth?.userId, action: 'CREATE', entity: 'ProductUnit', entityId: created.id, after: created, req }, tx);
+      return created;
+    });
+
+    return sendSuccess(res, unit, 'Product unit created', 201);
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const updateProductUnit = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = getTenantId(req);
+    const { id, unitId } = z.object({ id: z.string().uuid(), unitId: z.string().uuid() }).parse(req.params);
+    const payload = productUnitUpdateSchema.parse(req.body);
+    const unit = await prisma.$transaction(async (tx) => {
+      const before = await tx.productUnit.findFirst({ where: { id: unitId, productId: id, product: { tenantId } }, include: { unit: true } });
+      if (!before) throw new HttpError('Product unit not found', 404, 'PRODUCT_UNIT_NOT_FOUND');
+      if (payload.unitId && !(await tx.unit.findFirst({ where: { id: payload.unitId, tenantId } }))) throw new HttpError('Unit not found for tenant', 404, 'UNIT_NOT_FOUND');
+      const nextBase = payload.isBaseUnit ?? before.isBaseUnit;
+      const nextConversion = payload.conversion ?? before.conversion;
+      if (nextBase && nextConversion !== 1) throw new HttpError('Base unit must use conversion 1', 400, 'BASE_UNIT_CONVERSION_REQUIRED');
+      if (nextBase && !before.isBaseUnit && await tx.productUnit.findFirst({ where: { productId: id, isBaseUnit: true, id: { not: unitId } } })) throw new HttpError('Product already has a base unit', 409, 'BASE_UNIT_ALREADY_EXISTS');
+      if (before.isBaseUnit && payload.isBaseUnit === false) throw new HttpError('Product must retain one base unit', 400, 'BASE_UNIT_REQUIRED');
+      const updated = await tx.productUnit.update({ where: { id: unitId }, data: { unitId: payload.unitId, conversion: payload.conversion, isBaseUnit: payload.isBaseUnit, barcode: payload.barcode, sellingPrice: payload.sellingPrice === undefined ? undefined : money(payload.sellingPrice), purchasePrice: payload.purchasePrice === undefined ? undefined : money(payload.purchasePrice) }, include: { unit: true } });
+      await auditLog({ tenantId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'ProductUnit', entityId: unitId, before, after: updated, req }, tx);
+      return updated;
+    });
+    return sendSuccess(res, unit, 'Product unit updated');
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const updateProduct = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = getTenantId(req);
@@ -167,7 +263,16 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
     const payload = updateProductSchema.parse(req.body);
     const product = await prisma.$transaction(async (tx) => {
       const before = await tx.product.findFirstOrThrow({ where: { id, tenantId }, include: productInclude });
-      const { sellingPrice, purchasePrice, supervisorAuthorizationIds, ...productPayload } = payload;
+      const { catalogId, sellingPrice, purchasePrice, supervisorAuthorizationIds, ...productPayload } = payload;
+      if (catalogId) {
+        const catalog = await tx.productCatalog.findFirst({ where: { id: catalogId, isActive: true } });
+        if (!catalog) throw new HttpError('Active product catalog item not found', 404, 'CATALOG_ITEM_NOT_FOUND');
+        await tx.tenantProduct.upsert({
+          where: { productId: id },
+          create: { tenantId, catalogId, productId: id, minStock: payload.minStock, isActive: true },
+          update: { catalogId, minStock: payload.minStock },
+        });
+      }
       const pricePolicy = await tx.tenantPolicy.findUnique({ where: { tenantId_code: { tenantId, code: 'inventory.requireSupervisorForPriceEdit' } } });
       const priceGateEnabled = pricePolicy?.value === true || (typeof pricePolicy?.value === 'object' && pricePolicy.value !== null && !Array.isArray(pricePolicy.value) && (pricePolicy.value as { enabled?: unknown }).enabled === true);
       if (sellingPrice !== undefined && priceGateEnabled) {
@@ -176,7 +281,7 @@ export const updateProduct = async (req: Request, res: Response, next: NextFunct
       }
       const updated = await tx.product.update({
         where: { id },
-        data: productPayload,
+        data: { ...productPayload, ...(catalogId ? { catalogId } : {}) },
         include: productInclude,
       });
 

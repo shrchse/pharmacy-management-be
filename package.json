@@ -18,6 +18,7 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
+    "prisma:seed": "prisma db execute --file prisma/seed.superadmin.sql",
     "prisma:studio": "prisma studio"
   },
   "overrides": {

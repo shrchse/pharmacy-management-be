@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { Prisma } from '../../generated/prisma/client';
 import { auditLog } from '../../lib/audit';
 import { prisma } from '../../lib/prisma';
-import { sendSuccess } from '../../utils/apiResponse';
+import { HttpError, sendSuccess } from '../../utils/apiResponse';
 import { getTenantId } from '../../utils/scope';
 
 const planSchema = z.object({
@@ -19,6 +19,8 @@ const planSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
+const planUpdateSchema = planSchema.partial();
+
 const tenantProfileSchema = z.object({
   name: z.string().min(1),
   slug: z.string().min(1).regex(/^[a-z0-9-]+$/),
@@ -28,6 +30,13 @@ const tenantProfileSchema = z.object({
   taxId: z.string().optional(),
   planId: z.string().uuid().optional(),
   isDemo: z.boolean().default(false),
+});
+
+const subscriptionCreateSchema = z.object({
+  type: z.enum(['TRIAL', 'PAID']).optional(),
+  billingCycle: z.enum(['MONTHLY', 'YEARLY']).default('MONTHLY'),
+  trialDays: z.number().int().positive().max(90).default(14),
+  startsAt: z.coerce.date().optional(),
 });
 
 const tenantBranchSchema = z.object({
@@ -50,6 +59,7 @@ const tenantOwnerSchema = z.object({
 });
 
 const createTenantSchema = tenantProfileSchema.extend({
+  subscription: subscriptionCreateSchema.optional(),
   branch: tenantBranchSchema.optional(),
   owner: tenantOwnerSchema.optional(),
 });
@@ -66,10 +76,18 @@ const entitlementSchema = z.object({
 
 const subscriptionSchema = z.object({
   status: z.enum(['TRIAL', 'ACTIVE', 'EXPIRED', 'CANCELLED', 'SUSPENDED']),
+  billingCycle: z.enum(['MONTHLY', 'YEARLY']).optional(),
+  trialDays: z.coerce.number().int().positive().max(90).optional(),
+  startsAt: z.coerce.date().optional(),
   trialEndsAt: z.coerce.date().nullable().optional(),
   subscriptionEndsAt: z.coerce.date().nullable().optional(),
   planId: z.string().uuid().nullable().optional(),
 });
+
+const addDays = (date: Date, days: number) => new Date(date.getTime() + days * 24 * 60 * 60 * 1000);
+
+const addBillingCycle = (date: Date, cycle: 'MONTHLY' | 'YEARLY') =>
+  addDays(date, cycle === 'YEARLY' ? 365 : 30);
 
 const resetPasswordSchema = z.object({
   newPassword: z.string().min(8),
@@ -164,6 +182,109 @@ export const createPlan = async (req: Request, res: Response, next: NextFunction
   }
 };
 
+export const updatePlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    const payload = planUpdateSchema.parse(req.body);
+    const plan = await prisma.$transaction(async (tx) => {
+      const before = await tx.plan.findUniqueOrThrow({ where: { id } });
+      const updated = await tx.plan.update({
+        where: { id },
+        data: {
+          ...payload,
+          ...(payload.features === undefined
+            ? {}
+            : { features: JSON.parse(JSON.stringify(payload.features)) as Prisma.InputJsonValue }),
+        },
+      });
+      await auditLog({
+        tenantId: req.auth!.tenantId,
+        actorId: req.auth!.userId,
+        action: 'UPDATE',
+        entity: 'Plan',
+        entityId: id,
+        before,
+        after: updated,
+        req,
+      }, tx);
+      return updated;
+    });
+    return sendSuccess(res, plan, 'Plan updated');
+  } catch (error) {
+    return next(error);
+  }
+};
+
+export const deletePlan = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const id = z.string().uuid().parse(req.params.id);
+    const plan = await prisma.plan.findUniqueOrThrow({ where: { id } });
+    const tenantCount = await prisma.tenant.count({ where: { planId: id } });
+    if (tenantCount > 0) {
+      throw new HttpError('Plan is still assigned to tenants', 409, 'PLAN_IN_USE', { tenantCount });
+    }
+    await prisma.$transaction(async (tx) => {
+      await tx.plan.delete({ where: { id } });
+      await auditLog({ tenantId: req.auth!.tenantId, actorId: req.auth!.userId, action: 'DELETE', entity: 'Plan', entityId: id, before: plan, req }, tx);
+    });
+    return sendSuccess(res, { id, deleted: true }, 'Plan deleted');
+  } catch (error) {
+    return next(error);
+  }
+};
+
+const tenantChildDeleteOrder = [
+  'SyncConflict', 'SyncQueue', 'OfflineDevice', 'Attendance', 'ShiftSchedule', 'EmployeeProfile',
+  'PurchasePlanItem', 'PurchasePlan', 'JournalLine', 'JournalEntry', 'Expense', 'CashMutation',
+  'CashAccount', 'ReceivablePayment', 'Receivable', 'DebtPayment', 'Debt',
+  'ConsignmentSettlement', 'ConsignmentItem', 'ConsignmentAgreement',
+  'PurchaseReturnItem', 'PurchaseReturn', 'PurchaseItem', 'PurchaseApproval', 'Purchase',
+  'SupplierProductPrice', 'SaleReturnItem', 'SaleReturn', 'SalePayment', 'SaleItem',
+  'PrescriptionCopy', 'PrescriptionLabel', 'PrescriptionItem', 'Prescription', 'MedicalRecord',
+  'Sale', 'CashierSession', 'ExpiredStockAction', 'StockOpnameItem', 'StockOpname',
+  'StockTransfer', 'StockLedger', 'StockAlert', 'ProductBatch', 'StockLocation',
+  'TenantProduct', 'Product', 'Supplier', 'Doctor', 'Customer', 'RejectedSale',
+  'License', 'PractitionerLicense', 'AnalyticsSnapshot', 'IdempotencyKey',
+  'AuditLog', 'SupervisorAuthorization', 'TenantFeature', 'TenantPolicy',
+];
+
+export const deleteInternalTenant = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const tenantId = z.string().uuid().parse(req.params.id);
+    if (req.query.confirm !== 'DELETE') {
+      throw new HttpError('Tenant deletion requires query confirmation', 400, 'DELETE_CONFIRMATION_REQUIRED', { confirm: 'DELETE' });
+    }
+    const deleted = await prisma.$transaction(async (tx) => {
+      await tx.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+      // Keep the deletion list defensive: some legacy/optional tables do not
+      // have a tenantId column even though their rows are related indirectly.
+      const tenantTables = await tx.$queryRaw<Array<{ table_name: string }>>`
+        SELECT table_name
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND column_name = 'tenantId'
+          AND table_name IN (${Prisma.join(tenantChildDeleteOrder)})
+      `;
+      const deleteOrder = new Map(tenantChildDeleteOrder.map((table, index) => [table, index]));
+      tenantTables.sort((left, right) => (deleteOrder.get(left.table_name) ?? 0) - (deleteOrder.get(right.table_name) ?? 0));
+      for (const { table_name: table } of tenantTables) {
+        await tx.$executeRawUnsafe(`DELETE FROM "${table}" WHERE "tenantId" = $1`, tenantId);
+      }
+      await tx.$executeRawUnsafe('DELETE FROM "RolePermission" WHERE "roleId" IN (SELECT "id" FROM "Role" WHERE "tenantId" = $1)', tenantId);
+      await tx.$executeRawUnsafe('DELETE FROM "User" WHERE "tenantId" = $1', tenantId);
+      await tx.$executeRawUnsafe('DELETE FROM "Role" WHERE "tenantId" = $1', tenantId);
+      await tx.$executeRawUnsafe('DELETE FROM "Category" WHERE "tenantId" = $1', tenantId);
+      await tx.$executeRawUnsafe('DELETE FROM "Unit" WHERE "tenantId" = $1', tenantId);
+      await tx.$executeRawUnsafe('DELETE FROM "Branch" WHERE "tenantId" = $1', tenantId);
+      await tx.tenant.delete({ where: { id: tenantId } });
+      return { id: tenantId, deleted: true };
+    });
+    return sendSuccess(res, deleted, 'Tenant and child data deleted');
+  } catch (error) {
+    return next(error);
+  }
+};
+
 export const activeTenant = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const tenantId = getTenantId(req);
@@ -219,6 +340,19 @@ export const createInternalTenant = async (req: Request, res: Response, next: Ne
   try {
     const payload = createTenantSchema.parse(req.body);
     const passwordHash = payload.owner ? await bcrypt.hash(payload.owner.password, 12) : undefined;
+    const subscriptionType = payload.subscription?.type ?? (payload.planId && !payload.isDemo ? 'PAID' : 'TRIAL');
+    if (subscriptionType === 'PAID' && !payload.planId) {
+      throw new HttpError('planId is required for a paid subscription', 400, 'PLAN_REQUIRED');
+    }
+    const subscriptionStartedAt = payload.subscription?.startsAt ?? new Date();
+    const billingCycle = payload.subscription?.billingCycle ?? 'MONTHLY';
+    const subscriptionStatus = subscriptionType === 'PAID' ? 'ACTIVE' : 'TRIAL';
+    const trialEndsAt = subscriptionType === 'TRIAL'
+      ? addDays(subscriptionStartedAt, payload.subscription?.trialDays ?? 14)
+      : null;
+    const subscriptionEndsAt = subscriptionType === 'PAID'
+      ? addBillingCycle(subscriptionStartedAt, billingCycle)
+      : null;
     const tenant = await prisma.$transaction(async (tx) => {
       const created = await tx.tenant.create({
         data: {
@@ -230,8 +364,11 @@ export const createInternalTenant = async (req: Request, res: Response, next: Ne
           taxId: payload.taxId,
           planId: payload.planId,
           isDemo: payload.isDemo,
-          subscriptionStatus: 'TRIAL',
-          trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
+          subscriptionStatus,
+          subscriptionStartedAt,
+          subscriptionBillingCycle: billingCycle,
+          trialEndsAt,
+          subscriptionEndsAt,
         },
       });
 
@@ -430,9 +567,24 @@ export const updateTenantSubscription = async (req: Request, res: Response, next
     if (payload.planId) await prisma.plan.findUniqueOrThrow({ where: { id: payload.planId } });
     const tenant = await prisma.$transaction(async (tx) => {
       const before = await tx.tenant.findUniqueOrThrow({ where: { id: tenantId } });
+      const startsAt = payload.startsAt ?? new Date();
+      const billingCycle = payload.billingCycle ?? before.subscriptionBillingCycle ?? 'MONTHLY';
+      const trialEndsAt = payload.status === 'TRIAL'
+        ? payload.trialEndsAt ?? addDays(startsAt, payload.trialDays ?? 14)
+        : null;
+      const subscriptionEndsAt = payload.status === 'ACTIVE'
+        ? payload.subscriptionEndsAt ?? addBillingCycle(startsAt, billingCycle)
+        : payload.subscriptionEndsAt ?? (payload.status === 'EXPIRED' ? before.subscriptionEndsAt : null);
       const updated = await tx.tenant.update({
         where: { id: tenantId },
-        data: { subscriptionStatus: payload.status, trialEndsAt: payload.trialEndsAt, subscriptionEndsAt: payload.subscriptionEndsAt, planId: payload.planId },
+        data: {
+          subscriptionStatus: payload.status,
+          subscriptionStartedAt: startsAt,
+          subscriptionBillingCycle: billingCycle,
+          trialEndsAt,
+          subscriptionEndsAt,
+          planId: payload.planId,
+        },
         include: { plan: true, features: true },
       });
       if (payload.planId) {
@@ -514,7 +666,8 @@ export const resetDemoTenant = async (req: Request, res: Response, next: NextFun
     const tenantId = z.string().uuid().parse(req.params.id);
     const tenant = await prisma.$transaction(async (tx) => {
       const before = await tx.tenant.findUniqueOrThrow({ where: { id: tenantId } });
-      const updated = await tx.tenant.update({ where: { id: tenantId }, data: { subscriptionStatus: 'TRIAL', trialEndsAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000), subscriptionEndsAt: null, isDemo: true } });
+      const startedAt = new Date();
+      const updated = await tx.tenant.update({ where: { id: tenantId }, data: { subscriptionStatus: 'TRIAL', subscriptionStartedAt: startedAt, subscriptionBillingCycle: 'MONTHLY', trialEndsAt: addDays(startedAt, 14), subscriptionEndsAt: null, isDemo: true } });
       await auditLog({ tenantId, actorId: req.auth?.userId, action: 'UPDATE', entity: 'TenantDemo', entityId: tenantId, before, after: updated, req }, tx);
       return updated;
     });

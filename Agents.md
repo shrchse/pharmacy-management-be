@@ -122,6 +122,15 @@ Sebelum selesai:
 - Pastikan tidak ada import baru yang melanggar path alias `@/`.
 - Pastikan komponen tetap menerima tipe lama.
 
+## Task Tracker Protocol
+
+- Gunakan `task_tracker.md` sebagai catatan progres terverifikasi lintas sesi.
+- Setelah task/perbaikan benar-benar selesai dan verifikasi relevan berhasil, tanyakan di commentary: "Perubahan ini sudah selesai dan terverifikasi. Apakah ingin saya catat ke task_tracker.md?"
+- Jangan menandai task selesai atau menulisnya sebagai `[x]` ketika masih investigasi, gagal, parsial, atau baru berupa rekomendasi.
+- Jika user menyetujui, tambahkan item ringkas ke `task_tracker.md` beserta endpoint/file dan verifikasi yang dijalankan.
+- Jika user tidak memberi persetujuan, jangan menambah item baru ke tracker; tetap laporkan status di jawaban.
+- Task yang sedang berjalan atau belum terverifikasi boleh dicatat di bagian `Task Berikutnya` sebagai `[ ]` hanya jika user meminta tracking-nya.
+
 ## Style
 
 - TypeScript strict, hindari `any`.
