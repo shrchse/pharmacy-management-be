@@ -11,6 +11,7 @@ Dokumen ini dipakai sebagai alur pengerjaan praktis. PRD adalah target produk; w
 - Pecah fitur ke module produksi satu per satu: `auth`, `tenant`, `products`, `inventory`, `pos`, `cashier-shifts`, `purchases`, `finance`, `compliance`, `pharmacy`, `crm`, `owner`, `audit`.
 - Gunakan `Branch` sebagai model database yang mewakili outlet. Jika API publik tetap memakai istilah outlet, lakukan mapping eksplisit di DTO/router.
 - Gunakan `StockLocation` sebagai implementasi rak/lokasi stok, kecuali nanti diputuskan perlu model `Rack` terpisah.
+- Pisahkan identitas produk global dari konfigurasi operasional tenant: `ProductCatalog` untuk master platform, `TenantProduct` untuk assortment/harga/HPP/minimum stok/status tenant, dan `ProductBatch` untuk stok per tenant/cabang.
 - Semua write penting harus transactional, auditable, tenant-scoped, dan siap RLS.
 - Jangan mulai MVP2 sebelum gate MVP1 terpenuhi.
 
@@ -97,7 +98,13 @@ Tujuan: mengganti starter CRUD menjadi module produksi.
    - Entitlement dan subscription menjadi bagian response.
 
 2. Buat module `products`.
+   - Tambahkan fondasi `ProductCatalog` global dan `TenantProduct` tenant-scoped.
+   - Katalog global hanya menyimpan identitas produk umum; jangan simpan harga atau stok global.
+   - Tenant trial wajib memiliki mapping `TenantProduct` sebelum produk dapat dipakai POS/pembelian/inventory.
+   - Dukung produk lokal tenant untuk private label/racikan.
    - `/products`.
+   - `/product-catalog` untuk superadmin/platform.
+   - `/tenant-products` untuk aktivasi dan konfigurasi produk tenant.
    - `/products/:id`.
    - `/products/search`.
    - `/products/:id/batches`.
@@ -130,7 +137,8 @@ Tujuan: mengganti starter CRUD menjadi module produksi.
 
 Gate Phase 1:
 
-- Product, batch, stock overview, stock card, dan search bisa dipakai FE.
+- ProductCatalog dapat dipakai lintas tenant, sementara TenantProduct, batch, stock overview, stock card, dan search tetap terisolasi sesuai tenant/cabang.
+- Tenant baru dapat mengaktifkan produk katalog tanpa membuat salinan master global.
 - Semua endpoint tenant-scoped dan permission-gated.
 - Semua write master/inventory menghasilkan audit.
 - Stock mutation tercatat di `StockLedger`.

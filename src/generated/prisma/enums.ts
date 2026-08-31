@@ -20,6 +20,14 @@ export const SubscriptionStatus = {
 export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus]
 
 
+export const SubscriptionBillingCycle = {
+  MONTHLY: 'MONTHLY',
+  YEARLY: 'YEARLY'
+} as const
+
+export type SubscriptionBillingCycle = (typeof SubscriptionBillingCycle)[keyof typeof SubscriptionBillingCycle]
+
+
 export const BranchStatus = {
   ACTIVE: 'ACTIVE',
   INACTIVE: 'INACTIVE',

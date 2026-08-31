@@ -64,8 +64,12 @@ export const ModelName = {
   SupervisorAuthorization: 'SupervisorAuthorization',
   IdempotencyKey: 'IdempotencyKey',
   Category: 'Category',
+  CategoryCatalog: 'CategoryCatalog',
   Unit: 'Unit',
+  UnitCatalog: 'UnitCatalog',
+  ProductCatalog: 'ProductCatalog',
   Product: 'Product',
+  TenantProduct: 'TenantProduct',
   ProductUnit: 'ProductUnit',
   StockLocation: 'StockLocation',
   ProductBatch: 'ProductBatch',
@@ -100,6 +104,7 @@ export const ModelName = {
   ConsignmentAgreement: 'ConsignmentAgreement',
   ConsignmentItem: 'ConsignmentItem',
   ConsignmentSettlement: 'ConsignmentSettlement',
+  LicenseType: 'LicenseType',
   License: 'License',
   PractitionerLicense: 'PractitionerLicense',
   Debt: 'Debt',
@@ -169,6 +174,8 @@ export const TenantScalarFieldEnum = {
   timezone: 'timezone',
   currency: 'currency',
   subscriptionStatus: 'subscriptionStatus',
+  subscriptionStartedAt: 'subscriptionStartedAt',
+  subscriptionBillingCycle: 'subscriptionBillingCycle',
   trialEndsAt: 'trialEndsAt',
   subscriptionEndsAt: 'subscriptionEndsAt',
   isDemo: 'isDemo',
@@ -341,6 +348,20 @@ export const CategoryScalarFieldEnum = {
 export type CategoryScalarFieldEnum = (typeof CategoryScalarFieldEnum)[keyof typeof CategoryScalarFieldEnum]
 
 
+export const CategoryCatalogScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  type: 'type',
+  description: 'description',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type CategoryCatalogScalarFieldEnum = (typeof CategoryCatalogScalarFieldEnum)[keyof typeof CategoryCatalogScalarFieldEnum]
+
+
 export const UnitScalarFieldEnum = {
   id: 'id',
   tenantId: 'tenantId',
@@ -353,9 +374,48 @@ export const UnitScalarFieldEnum = {
 export type UnitScalarFieldEnum = (typeof UnitScalarFieldEnum)[keyof typeof UnitScalarFieldEnum]
 
 
+export const UnitCatalogScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  description: 'description',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type UnitCatalogScalarFieldEnum = (typeof UnitCatalogScalarFieldEnum)[keyof typeof UnitCatalogScalarFieldEnum]
+
+
+export const ProductCatalogScalarFieldEnum = {
+  id: 'id',
+  globalCode: 'globalCode',
+  barcode: 'barcode',
+  name: 'name',
+  genericName: 'genericName',
+  brandName: 'brandName',
+  registrationNumber: 'registrationNumber',
+  dosageForm: 'dosageForm',
+  strength: 'strength',
+  composition: 'composition',
+  manufacturer: 'manufacturer',
+  principal: 'principal',
+  productType: 'productType',
+  controlledClass: 'controlledClass',
+  categoryCatalogId: 'categoryCatalogId',
+  defaultUnitCatalogId: 'defaultUnitCatalogId',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ProductCatalogScalarFieldEnum = (typeof ProductCatalogScalarFieldEnum)[keyof typeof ProductCatalogScalarFieldEnum]
+
+
 export const ProductScalarFieldEnum = {
   id: 'id',
   tenantId: 'tenantId',
+  catalogId: 'catalogId',
   categoryId: 'categoryId',
   defaultSupplierId: 'defaultSupplierId',
   code: 'code',
@@ -380,6 +440,21 @@ export const ProductScalarFieldEnum = {
 } as const
 
 export type ProductScalarFieldEnum = (typeof ProductScalarFieldEnum)[keyof typeof ProductScalarFieldEnum]
+
+
+export const TenantProductScalarFieldEnum = {
+  id: 'id',
+  tenantId: 'tenantId',
+  catalogId: 'catalogId',
+  productId: 'productId',
+  customName: 'customName',
+  minStock: 'minStock',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type TenantProductScalarFieldEnum = (typeof TenantProductScalarFieldEnum)[keyof typeof TenantProductScalarFieldEnum]
 
 
 export const ProductUnitScalarFieldEnum = {
@@ -939,12 +1014,26 @@ export const ConsignmentSettlementScalarFieldEnum = {
 export type ConsignmentSettlementScalarFieldEnum = (typeof ConsignmentSettlementScalarFieldEnum)[keyof typeof ConsignmentSettlementScalarFieldEnum]
 
 
+export const LicenseTypeScalarFieldEnum = {
+  id: 'id',
+  code: 'code',
+  name: 'name',
+  description: 'description',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LicenseTypeScalarFieldEnum = (typeof LicenseTypeScalarFieldEnum)[keyof typeof LicenseTypeScalarFieldEnum]
+
+
 export const LicenseScalarFieldEnum = {
   id: 'id',
   tenantId: 'tenantId',
   branchId: 'branchId',
   code: 'code',
   type: 'type',
+  licenseTypeId: 'licenseTypeId',
   holderName: 'holderName',
   number: 'number',
   issuedAt: 'issuedAt',

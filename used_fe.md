@@ -5,23 +5,26 @@ Dokumen ini adalah referensi endpoint yang siap dipakai FE untuk integrasi MVP1.
 Status lokal 2026-08-22:
 
 - `npm run verify:staging` lulus: build, OpenAPI, HTTP smoke, database readiness, RLS runtime, dan E2E MVP1.
-- Kontrak OpenAPI memuat 53 path wajib.
+- Kontrak OpenAPI memuat 57 path wajib.
 - Endpoint `src/modules/starter` adalah prototype/legacy. FE baru sebaiknya memakai endpoint module produksi di dokumen ini.
 
 ## Seed UI Integration
 
-Untuk database demo dengan data master dan operasional lengkap tetapi hanya satu akun:
+Untuk database demo dengan tenant, dua cabang, role, akun, data master, dan data operasional lengkap:
 
 ```bash
-npx prisma migrate deploy
-npx prisma db execute --file prisma/seed.superadmin.sql
+npm run prisma:deploy
+npm run prisma:seed
 ```
 
-Login superadmin:
+Semua akun memakai password `Password123!`:
 
 ```text
-email: superadmin@apotek.local
-password: Password123!
+superadmin@apotek.local  (SUPER_ADMIN)
+owner@apotek.local       (OWNER)
+admin@apotek.local       (ADMIN)
+apj@apotek.local         (APJ, PIN: 123456)
+cashier@apotek.local     (CASHIER)
 ```
 
 Superadmin membuat tenant baru melalui `POST /internal/tenants`. Tenant baru otomatis mendapat role `OWNER`, `ADMIN`, `CASHIER`, dan `APJ` apabila owner dikirim pada payload.
@@ -203,10 +206,13 @@ Response penting:
 | POST | `/tenants/active` | Ya | - | Pilih branch aktif; FE memakai branch id sebagai `X-Branch-Id` |
 | GET | `/internal/plans` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Daftar paket aktif untuk console superadmin |
 | POST | `/internal/plans` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Buat paket subscription |
+| PATCH | `/internal/plans/:id` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Edit paket subscription |
+| DELETE | `/internal/plans/:id` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Hapus plan jika belum dipakai tenant |
 | GET | `/internal/tenants` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Superadmin/internal |
 | POST | `/internal/tenants` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Superadmin/internal |
 | GET | `/internal/tenants/:id` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Detail tenant, plan, branch, feature, user |
 | PATCH | `/internal/tenants/:id` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Update profil tenant dan `planId` |
+| DELETE | `/internal/tenants/:id` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Hapus tenant beserta seluruh data child; khusus testing/dev |
 | PATCH | `/internal/tenants/:id/entitlement` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Update satu feature entitlement |
 | PATCH | `/internal/tenants/:id/subscription` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Update status, periode, dan plan subscription |
 | POST | `/internal/tenants/:id/reset-demo` | Ya | `SUPERADMIN` + `internal.tenant.manage` | Reset status trial/demo 14 hari |
@@ -214,20 +220,20 @@ Response penting:
 
 ### Paket dan subscription
 
-Jenis subscription adalah paket `Plan`, bukan nilai `subscriptionStatus`. Paket default saat bootstrap pertama: `start`, `grow`, dan `scale`.
+Jenis subscription adalah paket `Plan`, bukan nilai `subscriptionStatus`. Paket komersial minimum yang direkomendasikan: `basic`, `grow`, dan `plus`.
 
 | Paket | Fitur utama |
 | --- | --- |
-| `start` | `inventory`, `purchasing`, `finance`, `resep` |
-| `grow` | Semua fitur `start` + `crm`, `multi_outlet` |
-| `scale` | Semua fitur `grow` + `retail`, `hrd`, `sop` |
+| `basic` | `inventory`, `purchasing`, `finance`, `resep` |
+| `grow` | Semua fitur `basic` + `crm`, `multi_outlet` |
+| `plus` | Semua fitur `grow` + `retail`, `hrd`, `sop` |
 
 Status subscription: `TRIAL`, `ACTIVE`, `EXPIRED`, `CANCELLED`, atau `SUSPENDED`.
 
 Alur FE:
 
 1. Ambil daftar paket dari `GET /internal/plans` dan simpan `data[].id`.
-2. Saat membuat atau mengganti paket tenant, kirim `planId` berupa UUID `Plan.id`, bukan string `start/grow/scale`.
+2. Saat membuat atau mengganti paket tenant, kirim `planId` berupa UUID `Plan.id`, bukan string `basic/grow/plus`.
 3. Backend otomatis menyinkronkan `Plan.features` ke `TenantFeature` tenant.
 4. FE membaca paket dan entitlement dari `GET /auth/me` atau `GET /tenants/active`.
 5. Jika fitur tidak aktif, endpoint terkait mengembalikan `403` dengan code `FEATURE_LOCKED`.
@@ -339,6 +345,145 @@ Hanya untuk membuat paket baru dari console superadmin. `features` adalah object
 }
 ```
 
+#### Payload paket default MVP1
+
+Payload berikut dapat dipakai untuk membuat tiga paket default. `code` menjadi business key unik dan `features` wajib dikirim sebagai object boolean (bukan array seperti format lama pada sebagian seed).
+
+Harga di bawah adalah nilai contoh dan dapat disesuaikan dengan keputusan bisnis sebelum dijalankan di production.
+
+**Basic**
+
+```json
+{
+  "code": "basic",
+  "name": "Basic",
+  "description": "Paket dasar untuk satu outlet",
+  "priceMonthly": 99000,
+  "priceYearly": 990000,
+  "maxBranches": 1,
+  "maxUsers": 5,
+  "features": {
+    "inventory": true,
+    "purchasing": true,
+    "finance": true,
+    "resep": true,
+    "crm": false,
+    "multi_outlet": false,
+    "retail": false,
+    "hrd": false,
+    "sop": false,
+    "reminder_ed": false,
+    "loyalty": false,
+    "price_tag": false,
+    "wa_broadcast": false
+  },
+  "isActive": true
+}
+```
+
+**Grow**
+
+```json
+{
+  "code": "grow",
+  "name": "Grow",
+  "description": "Paket operasional dengan CRM dan multi-outlet",
+  "priceMonthly": 299000,
+  "priceYearly": 2990000,
+  "maxBranches": 3,
+  "maxUsers": 15,
+  "features": {
+    "inventory": true,
+    "purchasing": true,
+    "finance": true,
+    "resep": true,
+    "crm": true,
+    "multi_outlet": true,
+    "retail": false,
+    "hrd": false,
+    "sop": false,
+    "reminder_ed": true,
+    "loyalty": true,
+    "price_tag": false,
+    "wa_broadcast": false
+  },
+  "isActive": true
+}
+```
+
+**Plus**
+
+```json
+{
+  "code": "plus",
+  "name": "Plus",
+  "description": "Paket lengkap untuk operasional multi-outlet",
+  "priceMonthly": 799000,
+  "priceYearly": 7990000,
+  "maxBranches": null,
+  "maxUsers": null,
+  "features": {
+    "inventory": true,
+    "purchasing": true,
+    "finance": true,
+    "resep": true,
+    "crm": true,
+    "multi_outlet": true,
+    "retail": true,
+    "hrd": true,
+    "sop": true,
+    "reminder_ed": true,
+    "loyalty": true,
+    "price_tag": true,
+    "wa_broadcast": true
+  },
+  "isActive": true
+}
+```
+
+Untuk mengganti konfigurasi paket yang sudah ada, gunakan `PATCH /internal/plans/:id` dengan payload parsial, misalnya:
+
+```json
+{
+  "name": "Grow Plus",
+  "priceMonthly": 349000,
+  "priceYearly": 3490000,
+  "maxBranches": 5,
+  "features": {
+    "inventory": true,
+    "purchasing": true,
+    "finance": true,
+    "resep": true,
+    "crm": true,
+    "multi_outlet": true,
+    "retail": true,
+    "hrd": false,
+    "sop": false
+  },
+  "isActive": true
+}
+```
+
+`PATCH /internal/plans/:id` menerima payload parsial, hanya dapat dipanggil superadmin, dan mencatat perubahan plan ke audit log.
+
+### DELETE data testing
+
+Untuk membersihkan data uji, hapus tenant terlebih dahulu. Endpoint ini khusus role `SUPERADMIN` internal (middleware backend memeriksa role dan permission `internal.tenant.manage`); tenant `OWNER`/`ADMIN` tidak dapat mengaksesnya. Endpoint menghapus tenant beserta data child tenant (branch, user, role, master data, stok, transaksi, finance, audit, dan data modul terkait) dalam satu transaksi.
+
+```http
+DELETE /api/v1/internal/tenants/{tenantId}?confirm=DELETE
+Authorization: Bearer <accessToken_superadmin>
+```
+
+Plan hanya dapat dihapus oleh `SUPERADMIN` dan jika tidak lagi dipakai oleh tenant. Jika masih direferensikan, backend mengembalikan `409 PLAN_IN_USE` beserta jumlah tenant yang masih menggunakan plan tersebut.
+
+```http
+DELETE /api/v1/internal/plans/{planId}
+Authorization: Bearer <accessToken_superadmin>
+```
+
+Urutan aman untuk reset data: `DELETE /internal/tenants/:id` lalu `DELETE /internal/plans/:id`.
+
 ### POST `/tenants/active`
 
 ```json
@@ -360,6 +505,10 @@ Endpoint ini tidak mengubah JWT. Setelah berhasil, FE memakai `data.branch.id` s
   "address": "Jl. Tenant",
   "taxId": "01.234.567.8-999.000",
   "planId": "uuid",
+  "subscription": {
+    "type": "PAID",
+    "billingCycle": "MONTHLY"
+  },
   "isDemo": false,
   "branch": {
     "code": "MAIN",
@@ -384,12 +533,49 @@ Endpoint ini tidak mengubah JWT. Setelah berhasil, FE memakai `data.branch.id` s
 Catatan penting:
 
 - Endpoint ini membuat profil tenant dan menyinkronkan entitlement dari `planId`.
+- Jika `subscription.type` adalah `PAID`, tenant langsung dibuat `ACTIVE` dan backend menghitung periode mulai/berakhir.
+- Jika `subscription.type` adalah `TRIAL`, tenant dibuat `TRIAL` selama `trialDays` (default 14 hari).
+- Jika `subscription` tidak dikirim, tenant dengan `planId` dan `isDemo: false` dianggap `PAID`; tenant demo atau tanpa plan dianggap `TRIAL`.
 - `email` pada payload adalah email profil tenant, bukan akun login.
 - Jika `owner` dikirim, backend membuat role `OWNER`, user owner, hash password, permission owner penuh, master category/unit awal, dan branch awal.
 - Jika `owner` dikirim tanpa `branch`, backend otomatis membuat branch default `MAIN` / `Cabang Utama`.
 - Akun owner langsung bisa login melalui `POST /auth/login` memakai `owner.email` dan `owner.password`.
 - Jika `owner` tidak dikirim, endpoint tetap hanya membuat tenant profile. Tenant belum bisa login sampai user dibuat untuk tenant tersebut.
 - Response tetap memiliki `data.id` sebagai tenant id, ditambah `data.branch` dan `data.owner` jika onboarding owner dilakukan.
+
+### Siklus status subscription
+
+Status subscription tidak ditentukan langsung oleh nama paket (`basic`, `grow`, atau `plus`). Paket hanya menentukan `planId` dan entitlement fitur. Siklus statusnya adalah:
+
+| Kondisi | Siapa yang menentukan | Perilaku backend |
+| --- | --- | --- |
+| Tenant baru dengan `subscription.type: PAID` | Backend | Otomatis `ACTIVE`; periode dimulai saat tenant dibuat atau `startsAt` yang dikirim |
+| Tenant baru dengan `subscription.type: TRIAL` | Backend | Otomatis `TRIAL` sesuai `trialDays` (default 14 hari) |
+| Trial masih berlaku | Backend berdasarkan `trialEndsAt` | Endpoint ber-feature dapat digunakan |
+| Perpanjangan/upgrade | Superadmin melalui FE | `PATCH /internal/tenants/:id/subscription`; tanggal dihitung dari `startsAt` dan `billingCycle` bila tidak dikirim |
+| Masa berlangganan lewat | Backend saat request | Akses feature ditolak `403 SUBSCRIPTION_INACTIVE`; scheduled job dapat mempersist status `EXPIRED` |
+| `EXPIRED`, `CANCELLED`, atau `SUSPENDED` | Superadmin atau job billing | Semua endpoint yang memakai `requireFeature` ditolak |
+
+Contoh aktivasi atau perpanjangan berbayar:
+
+```json
+{
+  "status": "ACTIVE",
+  "planId": "uuid-plan-basic",
+  "billingCycle": "MONTHLY",
+  "startsAt": "2026-08-29T00:00:00.000Z",
+  "trialEndsAt": null,
+  "subscriptionEndsAt": null
+}
+```
+
+Endpoint:
+
+```http
+PATCH /api/v1/internal/tenants/{tenantId}/subscription
+```
+
+Untuk trial, kirim `status: "TRIAL"`, `startsAt`, dan `trialDays`. Backend menghitung `trialEndsAt`. Untuk status `ACTIVE`, `subscriptionStartedAt` dan `subscriptionBillingCycle` disimpan sebagai sumber periode subscription.
 
 Contoh login owner tenant baru:
 
@@ -607,10 +793,159 @@ User body:
 | GET | `/products` | `stock.read` | List produk |
 | GET | `/products/search?q=para` | `stock.read` | Search POS/master |
 | POST | `/products` | `product.manage` | Buat produk + base unit |
+| POST | `/products/:id/units` | `product.manage` | Tambah unit penjualan strip/box |
+| PATCH | `/products/:id/units/:unitId` | `product.manage` | Koreksi unit/conversion produk lama |
 | GET | `/products/:id` | `stock.read` | Detail + batches |
 | PATCH | `/products/:id` | `product.manage` | Update master/harga base |
 | DELETE | `/products/:id` | `product.manage` | Gagal jika sudah ada histori |
 | GET | `/products/:id/batches` | `stock.read` | Batch by product |
+
+### Global Product Catalog dan TenantProduct
+
+Master produk sekarang memiliki dua lapisan:
+
+- `ProductCatalog`: identitas produk global yang dapat dipakai banyak tenant.
+- `TenantProduct`: konfigurasi produk untuk tenant tertentu.
+- `Product`: compatibility projection MVP1 yang masih dipakai POS, purchase, inventory, dan resep.
+- `ProductBatch`: stok dan expiry per tenant/cabang.
+
+Harga, HPP, minimum stok, status aktif, supplier, rak, dan batch tidak boleh dianggap global.
+
+| Method | Endpoint | Permission | Catatan |
+| --- | --- | --- | --- |
+| GET | `/product-catalog?q=para` | Authenticated | Cari katalog global aktif |
+| POST | `/product-catalog` | Superadmin | Membuat master global |
+| PATCH | `/product-catalog/:id` | Superadmin | Mengubah identitas global |
+| DELETE | `/product-catalog/:id` | Superadmin | Deactivate, bukan hard delete |
+| GET | `/tenant-products` | `stock.read` + `inventory` | List produk yang aktif/terdaftar pada tenant |
+| POST | `/tenant-products` | `product.manage` + `inventory` | Aktivasi katalog ke tenant; dapat membuat Product projection |
+| PATCH | `/tenant-products/:id` | `product.manage` + `inventory` | Ubah custom name, harga, HPP, minStock, status |
+| DELETE | `/tenant-products/:id` | `product.manage` + `inventory` | Deactivate produk tenant |
+
+`GET /tenant-products` juga mengembalikan ringkasan stok untuk branch aktif.
+Kirim `X-Branch-Id` agar nilai stok tidak tercampur antar-cabang. Field ringkasan
+tersedia pada item tenant-product dan di dalam `data[].product` untuk kompatibilitas
+dengan normalizer FE lama:
+
+```json
+{
+  "branchId": "uuid-branch-aktif",
+  "stock": 120,
+  "totalStock": 120,
+  "reservedStock": 0,
+  "availableStock": 120,
+  "batchCount": 1,
+  "nearestExpiredDate": "2027-12-31T00:00:00.000Z",
+  "locations": ["Rak Obat Bebas A1"],
+  "product": {
+    "stock": 120,
+    "totalStock": 120,
+    "availableStock": 120,
+    "batches": []
+  }
+}
+```
+
+`meta.count` tetap berarti jumlah tenant-product, bukan jumlah stok. FE cukup
+memakai `data[].product.stock` (atau `data[].stock`) sebagai stok tampilan.
+Jangan menjumlahkan stok dari semua branch di client. Jika branch tidak dikirim,
+backend mengagregasikan batch seluruh branch yang dapat diakses; perilaku ini
+sebaiknya hanya dipakai untuk laporan, bukan daftar stok operasional.
+
+### POST `/tenant-products` — aktivasi katalog ke tenant
+
+Jika `Product` projection tenant sudah ada, FE dapat mengirim `catalogId` dan `productId`. Jika belum ada projection, kirim juga konfigurasi tenant berikut agar backend membuatnya:
+
+```json
+{
+  "catalogId": "uuid-product-catalog",
+  "categoryId": "uuid-category-tenant",
+  "unitId": "uuid-unit-tenant",
+  "code": "PRD-PCT-500",
+  "conversion": 1,
+  "sellingPrice": 5000,
+  "purchasePrice": 3000,
+  "minStock": 20,
+  "customName": null,
+  "isActive": true
+}
+```
+
+Jika `productId` dikirim, backend hanya membuat atau memperbarui mapping terhadap produk tenant lama:
+
+```json
+{
+  "catalogId": "uuid-product-catalog",
+  "productId": "uuid-product-tenant",
+  "minStock": 20,
+  "isActive": true
+}
+```
+
+Saat membuat projection `Product` baru melalui endpoint ini, `conversion` juga wajib `1` karena unit yang dibuat adalah unit dasar. Tambahkan unit strip/box setelahnya melalui `POST /products/:id/units`.
+
+Response penting:
+
+```json
+{
+  "data": {
+    "id": "uuid-tenant-product",
+    "tenantId": "uuid-tenant",
+    "catalogId": "uuid-product-catalog",
+    "productId": "uuid-product-projection",
+    "customName": null,
+    "minStock": 20,
+    "isActive": true,
+    "catalog": {},
+    "product": {}
+  }
+}
+```
+
+### POST `/products` dengan katalog global
+
+`catalogId` bersifat opsional untuk backward compatibility. Jika dikirim, backend memvalidasi katalog aktif dan otomatis membuat `TenantProduct` mapping.
+
+```json
+{
+  "catalogId": "uuid-product-catalog",
+  "categoryId": "uuid-category-tenant",
+  "unitId": "uuid-unit-tenant",
+  "code": "PRD-PCT-500",
+  "sellingPrice": 5000,
+  "purchasePrice": 3000,
+  "minStock": 20
+}
+```
+
+### Flow produk setelah owner login
+
+Setelah owner berhasil login dan `GET /auth/me` selesai, halaman daftar produk tenant harus mengambil data dari `GET /tenant-products` (atau endpoint kompatibilitas `GET /products`). Endpoint tersebut menampilkan produk yang sudah aktif/terdaftar pada tenant yang sedang login.
+
+`GET /product-catalog` bukan sumber daftar produk operasional harian. FE hanya memakainya pada flow tambah/aktivasi produk, agar owner dapat mencari produk global lalu mengaktifkannya ke tenant melalui `POST /tenant-products`.
+
+```text
+Login owner
+  -> GET /auth/me
+  -> GET /tenant-products       // daftar produk aktif tenant
+  -> GET /product-catalog       // hanya saat mencari produk global untuk ditambahkan
+  -> POST /tenant-products      // aktivasi produk ke tenant
+```
+
+Pada daftar produk, tampilkan nama dari `tenantProduct.customName` jika tersedia; jika kosong gunakan nama dari `catalog.name` atau data `product` sebagai fallback. Harga dan stok tetap diambil dari data tenant (`tenantProduct`, `units`, dan `batches`), bukan dari `catalog`.
+
+### GET `/products` dan `/products/search`
+
+Response produk tetap kompatibel dengan tipe lama, tetapi sekarang dapat memuat:
+
+```text
+data.catalog        -> ProductCatalog global jika product terhubung katalog
+data.tenantProduct  -> konfigurasi tenant jika mapping tersedia
+data.units          -> ProductUnit dan harga tenant
+data.batches        -> batch tenant/cabang pada detail product
+```
+
+FE tidak boleh memakai `catalog` sebagai sumber harga atau stok. Gunakan `tenantProduct`, `units`, dan `batches`.
 
 ### POST `/products`
 
@@ -640,6 +975,25 @@ User body:
   "purchasePrice": 8000
 }
 ```
+
+Pada pembuatan produk baru, `unitId` harus menunjuk unit dasar terkecil dan `conversion` wajib `1`. Untuk menambah strip/box, gunakan `POST /products/:id/units` setelah produk dibuat.
+
+### POST `/products/:id/units`
+
+```json
+{
+  "unitId": "uuid-unit-strip",
+  "conversion": 10,
+  "isBaseUnit": false,
+  "sellingPrice": 14000,
+  "purchasePrice": 9000,
+  "barcode": "8997000000012"
+}
+```
+
+`isBaseUnit: true` hanya boleh digunakan untuk satu unit dengan `conversion: 1`. Unit tambahan harus memiliki `isBaseUnit: false`.
+
+Untuk menormalisasi data lama, gunakan `PATCH /products/:id/units/:unitId`. Unit dasar tidak boleh diubah menjadi non-base jika belum ada unit dasar pengganti.
 
 Allowed `productType`: `MEDICINE`, `MEDICAL_DEVICE`, `CONSUMABLE`, `COSMETIC`, `GENERAL`, `COMPOUND`.
 
@@ -690,10 +1044,59 @@ Content-Type: application/json
   "expiredDate": "2027-12-31",
   "buyPrice": 8000,
   "stock": 100,
+  "productUnitId": "uuid-product-unit-optional",
   "locationId": "uuid",
   "notes": "Initial stock"
 }
 ```
+
+`stock` adalah quantity dalam unit yang dipilih user jika `productUnitId` dikirim; backend mengonversinya ke unit dasar sebelum menyimpan batch. Jika `productUnitId` tidak dikirim, `stock` tetap dianggap sudah dalam unit dasar untuk kompatibilitas lama. Response batch selalu menyimpan quantity normalized dalam unit dasar.
+
+Contoh input 90 strip dengan conversion 10:
+
+```json
+{
+  "productId": "uuid-product",
+  "productUnitId": "uuid-product-unit-strip",
+  "stock": 90,
+  "batchNumber": "BATCH-STRIP-001",
+  "expiredDate": "2027-12-31",
+  "buyPrice": 1000
+}
+```
+
+Backend menyimpan `900` pada `ProductBatch.stock`. FE tidak perlu melakukan konversi bisnis sendiri.
+
+### Satuan stok, `conversion`, dan quantity checkout
+
+Kontrak MVP menyimpan `ProductBatch.stock` sebagai **jumlah unit dasar (base unit)**. Endpoint `POST /stock/batches` dapat menerima `productUnitId` sebagai satuan input; backend mengonversi quantity tersebut ke unit dasar sebelum menyimpan batch. Jika `productUnitId` tidak dikirim, `stock` dianggap sudah dalam unit dasar untuk kompatibilitas lama.
+
+`ProductUnit.conversion` menyatakan berapa unit dasar yang terkandung dalam satu unit penjualan:
+
+```text
+1 pcs   = conversion 1
+1 strip = conversion 10
+1 box   = conversion 50
+```
+
+Checkout mengonversi quantity penjualan ke unit dasar:
+
+```text
+baseQty = qty * productUnit.conversion
+```
+
+Contoh: `stock = 90` berarti 90 unit dasar. Jika unit yang dipilih memiliki `conversion = 10`, maka stok tersebut hanya dapat menjual 9 strip; checkout 10 strip membutuhkan 100 unit dasar.
+
+Aturan FE:
+
+- Ambil unit dari `product.units[]` dan kirim `productUnitId = product.units[].id`; jangan memakai `unit.id` atau `defaultUnitCatalogId`.
+- Tampilkan label satuan bersama angka stok. Minimal tampilkan `90 unit dasar` jika unit dasar belum dapat ditentukan.
+- Untuk unit dengan conversion `c`, tampilkan kapasitas jual `floor(availableStock / c)` dan sisa unit dasar jika diperlukan.
+- Jangan menjumlahkan stok antar-branch. Gunakan response `GET /tenant-products` dengan `X-Branch-Id` atau `GET /products/:id/batches` pada branch aktif.
+- Sebelum checkout, FE boleh melakukan pre-check `qty * conversion <= availableStock`, tetapi backend tetap menjadi validasi final.
+- Jika `availableStock` berasal dari beberapa batch, tampilkan total untuk informasi; backend checkout saat ini mencari satu batch `AVAILABLE` yang mencukupi (stok antar-batch belum dialokasikan otomatis).
+
+Konfigurasi produk yang paling konsisten adalah unit terkecil sebagai `isBaseUnit: true` dengan `conversion: 1`, kemudian strip/box sebagai unit tambahan dengan `isBaseUnit: false`. Data lama yang menandai unit `conversion > 1` sebagai base unit harus ditampilkan FE sebagai konfigurasi legacy dan tidak boleh diasumsikan sebagai stok box/strip tanpa konfirmasi.
 
 ### POST `/stock/opname`
 
@@ -761,6 +1164,8 @@ Semua endpoint cashier shift **branch-scoped**. FE harus mengirim `X-Branch-Id: 
 | Method | Endpoint | Permission | Scope/Params | Catatan |
 | --- | --- | --- | --- | --- |
 | POST | `/cashier-shifts/open` | `pos.checkout` | `X-Branch-Id` | Buka shift kasir |
+| GET | `/cashier-shifts/active` | `pos.checkout` | `X-Branch-Id`, user dari token | Shift `OPEN` milik kasir yang login; `data` dapat `null` |
+| GET | `/cashier-shifts` | `pos.checkout` | `X-Branch-Id`, query filter/pagination | Daftar shift; OWNER/ADMIN dapat semua kasir, role lain hanya miliknya |
 | GET | `/cashier-shifts/:id` | `pos.checkout` | `X-Branch-Id`, path `id` = `CashierSession.id` | Detail shift |
 | POST | `/cashier-shifts/:id/close` | `pos.checkout` | `X-Branch-Id`, path `id` = `CashierSession.id` | Blind close |
 | POST | `/cashier-shifts/:id/deposit` | `finance.manage` | `X-Branch-Id`, path `id` = `CashierSession.id` | Set deposit |
@@ -777,6 +1182,39 @@ Semua endpoint cashier shift **branch-scoped**. FE harus mengirim `X-Branch-Id: 
 ```
 
 `cashierId` optional. Jika kosong, backend memakai user dari token.
+
+### GET `/cashier-shifts/active`
+
+Dipakai saat kasir login atau memilih outlet. Endpoint mengembalikan shift `OPEN` milik user pada branch aktif. Jika belum ada shift, response `data` bernilai `null`; FE dapat menampilkan form buka shift.
+
+### GET `/cashier-shifts`
+
+Query yang tersedia:
+
+```txt
+status=OPEN|CLOSED|DEPOSITED|VERIFIED|REJECTED
+cashierId=<uuid>       # OWNER/ADMIN; role lain dipaksa ke user token
+from=<ISO-8601>
+to=<ISO-8601>
+page=1
+limit=20               # maksimum 100
+```
+
+Response memakai envelope standar. `meta` berisi `count`, `total`, `page`, dan `limit`. Tenant berasal dari token dan outlet dari `X-Branch-Id`.
+
+### Status CashierSession
+
+Kolom `CashierSession.status` saat ini berupa `TEXT` agar kompatibel dengan migration/seed lama. Nilai yang digunakan backend adalah:
+
+| Status | Arti |
+| --- | --- |
+| `OPEN` | Shift sedang berjalan |
+| `CLOSED` | Kasir sudah menutup shift dan kas sudah dihitung |
+| `DEPOSITED` | Setoran kas sudah dicatat |
+| `VERIFIED` | Shift/setoran sudah diverifikasi leader/admin |
+| `REJECTED` | Verifikasi ditolak |
+
+Seed menggunakan `VERIFIED` karena data tersebut adalah contoh histori shift yang sudah ditutup, disetor, dan diverifikasi—bukan shift aktif. Shift baru dari `POST /cashier-shifts/open` selalu dimulai dengan status `OPEN`.
 
 Response penting untuk FE:
 
@@ -929,6 +1367,66 @@ Catatan:
 - Retry dengan `Idempotency-Key` dan body sama akan mengembalikan sale yang sama.
 - Retry dengan key sama tapi body berbeda akan `409 IDEMPOTENCY_KEY_CONFLICT`.
 - Jika discount item/global melebihi 50% atau menjual stok kosong, kirim authorization supervisor yang sesuai.
+
+### Flow POS end-to-end per role
+
+Urutan request FE yang wajib untuk semua role tenant:
+
+```text
+1. POST /auth/login
+2. GET  /auth/me
+3. POST /tenants/active { branchId } jika perlu memilih outlet
+4. GET  /cashier-shifts/active
+5. POST /cashier-shifts/open jika user belum memiliki shift OPEN
+6. POST /auth/supervisor-authorizations jika checkout membutuhkan override
+7. POST /pos/checkout
+8. POST /cashier-shifts/{sessionId}/close saat shift selesai
+9. POST /cashier-shifts/{sessionId}/deposit dan /verify sesuai hak akses
+```
+
+Request branch-scoped harus selalu membawa:
+
+```http
+Authorization: Bearer <accessToken>
+X-Branch-Id: <branchId>
+```
+
+`GET /cashier-shifts/active` hanya mencari shift `OPEN` milik user yang sedang login. Jika `data` bernilai `null`, FE menampilkan form buka shift. Simpan `data.id` dari shift aktif/baru sebagai `sessionId` dan gunakan ID yang sama pada checkout serta close.
+
+Aturan per role:
+
+| Role | POS checkout | Aturan shift |
+| --- | --- | --- |
+| `CASHIER` | Ya, jika memiliki `pos.checkout` | Membuka dan memakai shift sendiri |
+| `ADMIN` | Ya, jika memiliki `pos.checkout` | Dapat membuka shift untuk kasir lain; jika ikut transaksi, harus membuka shift sendiri |
+| `OWNER` | Ya, jika memiliki `pos.checkout` | Dapat membuka shift untuk kasir lain; jika ikut transaksi, harus membuka shift sendiri |
+| `APJ` | Ya, jika memiliki `pos.checkout` | Membuka dan memakai shift sendiri |
+
+`POST /cashier-shifts/open` tanpa `cashierId` selalu membuat shift untuk user pada token. `cashierId` hanya digunakan oleh OWNER/ADMIN untuk assignment shift kasir. `sessionId` milik kasir lain tidak boleh digunakan untuk checkout oleh OWNER/ADMIN.
+
+Pada `POST /pos/checkout`, FE sebaiknya tidak mengirim `cashierId`; backend mengambilnya dari token dan menolak nilai yang berbeda dari user login dengan `403 CASHIER_SCOPE_DENIED`. Checkout hanya berhasil jika `sessionId` tersebut berstatus `OPEN` dan dimiliki user login.
+
+Supervisor authorization hanya dibuat ketika backend membutuhkan override, misalnya `sell_empty_stock` atau `discount_over_50`:
+
+```http
+POST /auth/supervisor-authorizations
+```
+
+Gunakan `data.id` response pada `supervisorAuthorizationIds`. Supervisor harus user aktif pada tenant/branch yang sama, memiliki permission yang dibutuhkan, dan berbeda dari user peminta.
+
+Error yang harus ditangani FE:
+
+| Code | Penanganan |
+| --- | --- |
+| `PERMISSION_DENIED` | User tidak memiliki permission `pos.checkout` |
+| `FEATURE_LOCKED` / `SUBSCRIPTION_INACTIVE` | Tampilkan modul terkunci/langganan tidak aktif |
+| `SHIFT_REQUIRED` | Arahkan user ke proses buka shift sendiri |
+| `SHIFT_ALREADY_OPEN` | Panggil `/cashier-shifts/active`, jangan buka shift kedua |
+| `CASHIER_SCOPE_DENIED` | Jangan gunakan session milik user lain |
+| `SUPERVISOR_AUTHORIZATION_REQUIRED` | Buka dialog otorisasi supervisor |
+| `SUPERVISOR_AUTHORIZATION_INVALID` | Minta authorization baru atau periksa tenant/branch/action |
+| `INSUFFICIENT_STOCK` | Kurangi qty atau tambahkan stok |
+| `IDEMPOTENCY_KEY_CONFLICT` | Buat `Idempotency-Key` baru untuk body yang berbeda |
 
 ### Pending cart / hold customer
 
@@ -1357,6 +1855,44 @@ Allowed `status`: `DRAFT`, `SCHEDULED`, `RUNNING`, `COMPLETED`, `CANCELLED`.
 
 Semua endpoint owner membaca data live dari sale, sale item, stock batch, cash, debt, receivable, purchase, dan audit log.
 
+### Response `GET /owner/dashboard`
+
+Dashboard mengambil `tenantId` dari JWT user yang login. Jika `X-Branch-Id` dikirim, summary dibatasi ke branch tersebut; jika tidak dikirim, summary mencakup seluruh branch yang berada dalam tenant user.
+
+```json
+{
+  "data": {
+    "scope": {
+      "tenantId": "uuid-tenant-login",
+      "branchId": "uuid-branch-aktif"
+    },
+    "sales": {
+      "todayRevenue": "150000.00",
+      "todayTransactions": 12,
+      "monthRevenue": "4500000.00",
+      "monthTransactions": 320,
+      "monthGrossProfit": "1200000.00"
+    },
+    "finance": {
+      "cashBalance": "2500000.00",
+      "receivableBalance": "750000.00",
+      "debtBalance": "1200000.00"
+    },
+    "inventory": {
+      "stockValue": "8500000.00",
+      "lowStockCount": 4,
+      "expiringBatchCount": 2,
+      "expiredBatchCount": 0
+    }
+  },
+  "meta": {
+    "message": "Owner dashboard retrieved"
+  }
+}
+```
+
+Dashboard ini adalah summary tenant/branch, bukan summary personal user. User harus memiliki permission `report.read`; role owner tenant yang dibuat melalui onboarding sudah mendapat permission tersebut. FE sebaiknya memanggil `GET /auth/me` lebih dahulu, memilih branch dari `data.branches`, lalu mengirim `X-Branch-Id` secara konsisten.
+
 ## Audit Log
 
 | Method | Endpoint | Permission | Catatan |
@@ -1378,7 +1914,7 @@ Backend mencatat login/logout, perubahan role/permission, perubahan master sensi
 3. Panggil `GET /auth/me`.
 4. Pilih branch dari `data.branches`, lalu kirim `X-Branch-Id` di endpoint branch-scoped.
 5. Untuk halaman administrasi, load `GET /permissions` dan `GET /roles`, lalu kelola role custom melalui `/roles` sebelum membuat user.
-6. Load master data: products, customers, suppliers, units, categories, racks.
+6. Untuk daftar produk owner, panggil `GET /tenant-products` (atau `GET /products` untuk kompatibilitas). Gunakan `GET /product-catalog` hanya saat flow tambah/aktivasi produk global, lalu kirim pilihan tersebut ke `POST /tenant-products`. Master data lain: customers, suppliers, units, categories, racks.
 7. POS:
    - buka shift `POST /cashier-shifts/open`
    - checkout `POST /pos/checkout` dengan `Idempotency-Key`
